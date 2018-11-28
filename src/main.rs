@@ -54,7 +54,7 @@ impl From<Cardcolor> for Player {
     }
 }
 impl Table {
-    pub fn new(players: u8) -> Table{
+    pub fn new(players: u8) -> Table {
         // The amount of commons is dependent on the number of players
         let players = players as usize;
 
@@ -91,7 +91,7 @@ impl Table {
     }
 }
 impl Game {
-    fn initialize_players(&mut self, num_players: u8){
+    fn generate_players(num_players: u8) -> Vec<Player> {
         let mut colors = COLORS.to_vec().clone();
 
         match num_players {
@@ -108,19 +108,22 @@ impl Game {
             }
             _ => {
                 println!("There should only be 2-4 players!");
-                return;
+                return Vec::new();
             }
         }
         thread_rng().shuffle(&mut colors);
 
-        self.players = colors.into_iter().map(Player::from).collect();
+        return colors.into_iter().map(Player::from).collect();
     }
-    pub fn new(&mut self, num_players: u8){
-        self.decks = Table::new(num_players);
-        self.initialize_players(num_players);
-        for player in self.players.iter_mut() {
-            player.hand.extend(self.decks.common.drain(0..6));
+    pub fn new(num_players: u8) -> Game {
+        let mut g = Game {
+            decks: Table::new(num_players),
+            players: Game::generate_players(num_players)
+        };
+        for player in g.players.iter_mut() {
+            player.hand.extend(g.decks.common.drain(0..6));
         }
+        return g;
     }
 }
 
