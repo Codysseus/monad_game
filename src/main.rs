@@ -118,10 +118,6 @@ impl Game {
         }
         thread_rng().shuffle(&mut colors);
 
-        if self.decks.common.len() == 0 {
-            return;
-        }
-
         self.players = colors.into_iter().map(Player::from).collect();
     }
     pub fn new(&mut self, num_players: u8){
