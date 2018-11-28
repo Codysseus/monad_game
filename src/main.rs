@@ -46,6 +46,11 @@ struct Game {
 }
 
 // Function Definitions
+impl From<Cardcolor> for Player {
+    fn from(color: Cardcolor) -> Self {
+        Player { identity: color, hand: Vec::new(), monads: 0 }
+    }
+}
 impl Game {
     /*
      * Name: initialize_table
@@ -118,11 +123,10 @@ impl Game {
             return;
         }
 
-        self.players = colors.into_iter().map( |color| {
-            Player { identity: color, hand: Vec::new(), monads: 0 }
-        }).collect();
-        for player in self.players.iter() {
-            //player.hand.extend_from_slice(self.decks.common.drain(0..6));
+        self.players = colors.into_iter().map(Player::from).collect();
+
+        for player in self.players.iter_mut() {
+            player.hand.append(&mut self.decks.common.drain(0..6).collect::<Vec<_>>());
         }
     }
     fn new(&mut self, num_players: u8){
