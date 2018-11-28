@@ -98,7 +98,6 @@ impl Game {
     }
     fn initialize_players(&mut self, num_players: u8){
         let mut colors = vec![Red, Orange, Yellow, Purple, Blue, Green];
-        self.players = Vec::with_capacity(num_players as usize);
 
         match num_players {
             2 => {
@@ -124,18 +123,15 @@ impl Game {
         }
 
         self.players = colors.into_iter().map(Player::from).collect();
-
-        for player in self.players.iter_mut() {
-            player.hand.append(&mut self.decks.common.drain(0..6).collect::<Vec<_>>());
-        }
     }
     fn new(&mut self, num_players: u8){
         self.initialize_table(num_players);
         self.initialize_players(num_players);
+        for player in self.players.iter_mut() {
+            player.hand.append(&mut self.decks.common.drain(0..6).collect::<Vec<_>>());
+        }
     }
 }
 
 fn main(){
-    let num_players = 4;
-
 }
