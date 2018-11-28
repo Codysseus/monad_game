@@ -3,6 +3,8 @@ use rand::{Rng,thread_rng};
 use Cardcolor::*;
 use Cardvalue::*;
 
+const COLORS: [Cardcolor; 6] = [Red, Orange, Yellow, Purple, Blue, Green];
+
 // Value Definitions
 #[derive(Clone, Copy)]
 enum Cardcolor {
@@ -52,17 +54,6 @@ impl From<Cardcolor> for Player {
     }
 }
 impl Game {
-    /*
-     * Name: initialize_table
-     * Desc: Initialize all of the decks in the Table struct
-     * Parameters:
-     *      - Name: decks
-     *        Type: Table
-     *        Desc:
-     *      - Name: players
-     *        Type: u8
-     *        Desc:
-     */
     fn initialize_table(&mut self, players: u8) {
         // The amount of commons is dependent on the number of players
         let players = players as usize;
