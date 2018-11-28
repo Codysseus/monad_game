@@ -124,7 +124,7 @@ impl Game {
 
         self.players = colors.into_iter().map(Player::from).collect();
     }
-    fn new(&mut self, num_players: u8){
+    pub fn new(&mut self, num_players: u8){
         self.initialize_table(num_players);
         self.initialize_players(num_players);
         for player in self.players.iter_mut() {
