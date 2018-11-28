@@ -70,7 +70,7 @@ impl Game {
         };
 
         // Fill decks with appropriate cards
-        for color in &[Red, Orange, Yellow, Purple, Blue, Green] {
+        for color in COLORS.iter() {
             for _ in 1..players {
                 self.decks.common.push(Card {value: Common, color: *color});
             }
@@ -88,7 +88,7 @@ impl Game {
         thread_rng().shuffle(&mut self.decks.quint);
     }
     fn initialize_players(&mut self, num_players: u8){
-        let mut colors = vec![Red, Orange, Yellow, Purple, Blue, Green];
+        let mut colors = COLORS.to_vec().clone();
 
         match num_players {
             2 => {
@@ -115,7 +115,7 @@ impl Game {
         self.initialize_table(num_players);
         self.initialize_players(num_players);
         for player in self.players.iter_mut() {
-            player.hand.append(&mut self.decks.common.drain(0..6).collect::<Vec<_>>());
+            player.hand.extend(self.decks.common.drain(0..6));
         }
     }
 }
