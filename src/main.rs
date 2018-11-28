@@ -53,13 +53,13 @@ impl From<Cardcolor> for Player {
         Player { identity: color, hand: Vec::new(), monads: 0 }
     }
 }
-impl Game {
-    fn initialize_table(&mut self, players: u8) {
+impl Table {
+    pub fn new(players: u8) -> Table{
         // The amount of commons is dependent on the number of players
         let players = players as usize;
 
         // Create vectors for the different decks
-        self.decks = Table {
+        let mut t = Table {
         	discard: Vec::with_capacity(6*players),
         	common: Vec::with_capacity(6*players),
         	bi: Vec::with_capacity(6),
@@ -72,21 +72,25 @@ impl Game {
         // Fill decks with appropriate cards
         for color in COLORS.iter() {
             for _ in 1..players {
-                self.decks.common.push(Card {value: Common, color: *color});
+                t.common.push(Card {value: Common, color: *color});
             }
-            self.decks.bi.push(Card {value: Bi, color: *color});
-            self.decks.tri.push(Card {value: Tri, color: *color});
-            self.decks.quad.push(Card {value: Quad, color: *color});
-            self.decks.quint.push(Card {value: Quint, color: *color});
+            t.bi.push(Card {value: Bi, color: *color});
+            t.tri.push(Card {value: Tri, color: *color});
+            t.quad.push(Card {value: Quad, color: *color});
+            t.quint.push(Card {value: Quint, color: *color});
         }
 
-        // Shuffle decks
-        thread_rng().shuffle(&mut self.decks.common);
-        thread_rng().shuffle(&mut self.decks.bi);
-        thread_rng().shuffle(&mut self.decks.tri);
-        thread_rng().shuffle(&mut self.decks.quad);
-        thread_rng().shuffle(&mut self.decks.quint);
+        // Shuffle
+        thread_rng().shuffle(&mut t.common);
+        thread_rng().shuffle(&mut t.bi);
+        thread_rng().shuffle(&mut t.tri);
+        thread_rng().shuffle(&mut t.quad);
+        thread_rng().shuffle(&mut t.quint);
+
+        return t;
     }
+}
+impl Game {
     fn initialize_players(&mut self, num_players: u8){
         let mut colors = COLORS.to_vec().clone();
 
@@ -112,7 +116,7 @@ impl Game {
         self.players = colors.into_iter().map(Player::from).collect();
     }
     pub fn new(&mut self, num_players: u8){
-        self.initialize_table(num_players);
+        self.decks = Table::new(num_players);
         self.initialize_players(num_players);
         for player in self.players.iter_mut() {
             player.hand.extend(self.decks.common.drain(0..6));
