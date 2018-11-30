@@ -29,7 +29,12 @@ impl Player {
                 return Err(String::from("Cards should have the same value when trading! Or if they don't, one should at least be your identity color!"));
             }
             else {
-                
+                return if card1.1 == self.identity {
+                    Ok(card2.0)
+                }
+                else {
+                    Ok(card1.0)
+                }
             }
         }
         return Ok(card1.0);
