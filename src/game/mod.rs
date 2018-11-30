@@ -6,7 +6,7 @@ pub mod table;
 pub mod player;
 
 use self::table::Table;
-use self::card::{Value, Monad};
+use self::card::Value;
 use self::player::Player;
 use std::io;
 
@@ -16,62 +16,60 @@ pub struct Game {
     table: Table,
 }
 
+pub fn read_uint_from_user() -> usize {
+    let mut string = String::new();
+    loop {
+        io::stdin().read_line(&mut string).expect("Problem reading input from user!");
+        if let Ok(r) = string.trim().parse::<usize>() {
+            break r;
+        }
+        println!("What you entered is not an unsigned integer! Please try again.");
+    }
+}
+
 impl Game {
     // Public functions
-    pub fn trade(&mut self, player: usize){
-        let mut player = &mut self.players[player];
-        let mut card1 = String::new();
-        let mut card2 = String::new();
+    pub fn trade(&mut self, player: usize) {
+        let player = &mut self.players[player];
+        let mut card1: usize = 0;
+        let mut card2: usize = 0;
 
-        loop{
-            println!("Please enter the first card you want to trade.");
+        let card = loop {
+            println!("Please enter the first card for trading!");
+            card1 = read_uint_from_user();
 
-            io::stdin().read_line(&mut card1)
-                .expect("Failed to read line.");
+            println!("Please enter the second card for trading!");
+            card2 = read_uint_from_user();
 
-            let card1: usize = card1.trim().parse()
-                .expect("Please type a number!");
-
-            io::stdin().read_line(&mut card2)
-                .expect("Failed to read line.");
-
-            let card2: usize = card2.trim().parse()
-                .expect("Please type a number!");
-            
             let card_value = match player.get_trade_value(card1, card2) {
-                Ok(value) => value,
-                Err(msg) => {
-                    println!("{}", msg);
-                    continue;
-                },
+                Ok(v) => v,
+                Err(m) => { println!("{}", m); continue; },
             };
 
-            use self::card::Value::*;
-            let card = match card_value {
-                Common => self.table.bi.pop(),
-                Bi => self.table.tri.pop(),
-                Tri => self.table.quad.pop(),
-                Quad => self.table.quint.pop(),
-                Quint => {
+            let card = match card_value.succ() {
+                Some(v) => self.table.draw_top(v),
+                None => {
                     player.monads.push(self.table.monad.pop().unwrap());
+                    // Returns here because the main should already have stopped the game before the monads run out
                     return;
                 },
             };
 
-            match card {
-                Some(c) => {
-                    let deck = self.table.get_deck(card_value);
-                    deck.insert(0, player.hand.remove(card1));
-                    deck.insert(0, player.hand.remove(card2));
-                    player.hand.push(c);
-                }
-                None => {
-                    println!("You can't buy any more of that card!");
-                    continue;
-                }
+            if let Some(v) = card {
+                break v;
             }
-            return;
-        }
+
+            println!("You can't draw any more of that card! Please choose different cards!");
+        };
+
+        let discard_deck = match card.0 {
+            Value::Common => &mut self.table.discard,
+            _             => self.table.get_deck(card.0),
+        };
+
+        discard_deck.insert(0, player.hand.remove(card1));
+        discard_deck.insert(0, player.hand.remove(card2));
+        player.hand.push(card);
     }
 
     pub fn new(num_players: usize) -> Result<Self, String> {

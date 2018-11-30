@@ -52,6 +52,9 @@ impl Table {
             Quint  => &mut self.quint,
         }
     }
+    pub fn draw_top(&mut self, value: card::Value) -> Option<Card> {
+        return self.get_deck(value).pop()
+    }
 
     fn shuffle_decks(&mut self) {
         self.bi    .shuffle();
