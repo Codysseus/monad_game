@@ -4,7 +4,13 @@ use std::ops::{Deref, DerefMut};
 
 pub struct Monad;
 
-#[derive(Clone, Copy)]
+#[derive(PartialEq)]
+pub enum Temp {
+    Warm,
+    Cold,
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum Color {
     Red,
     Orange,
@@ -14,6 +20,7 @@ pub enum Color {
     Green,
 }
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum Value {
     Common,
     Bi,
@@ -23,6 +30,14 @@ pub enum Value {
 }
 
 pub struct Card(pub Value, pub Color);
+impl Card {
+    pub fn get_temp(&self) -> Temp {
+        match self.1 {
+            Color::Yellow | Color::Red | Color::Orange => Temp::Warm,
+            _ => Temp::Cold,
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct Deck(Vec<Card>);

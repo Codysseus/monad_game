@@ -3,25 +3,13 @@ use rand::{seq::SliceRandom, thread_rng};
 
 pub mod card;
 pub mod table;
+pub mod player;
 
 use self::table::Table;
 use self::card::Monad;
+use self::player::Player;
+use std::io;
 
-struct Player {
-    hand: card::Deck,
-    identity: card::Color,
-    monads: Vec<Monad>,
-}
-
-impl From<card::Color> for Player {
-    fn from(color: card::Color) -> Self {
-        Player {
-            identity: color,
-            hand: card::Deck::default(),
-            monads: Vec::new(),
-        }
-    }
-}
 
 struct Game {
     players: Vec<Player>,
@@ -29,6 +17,45 @@ struct Game {
 }
 
 impl Game {
+    // Public functions
+    pub fn trade(&mut self, player: usize){
+        let mut player = &self.players[player];
+        let mut card1 = String::new();
+        let mut card2 = String::new();
+
+        loop{
+            println!("Please enter the first card you want to trade.");
+
+            io::stdin().read_line(&mut card1)
+                .expect("Failed to read line.");
+
+            let card1: usize = card1.trim().parse()
+                .expect("Please type a number!");
+
+            io::stdin().read_line(&mut card2)
+                .expect("Failed to read line.");
+
+            let card2: usize = card2.trim().parse()
+                .expect("Please type a number!");
+            
+            let value = player.get_trade_value(card1, card2);
+
+            
+        }
+    }
+
+    pub fn new(num_players: usize) -> Result<Self, String> {
+        let mut table = Table::new(num_players);
+        let mut players = Game::generate_players(num_players)?;
+
+        for player in &mut players {
+            player.hand.extend(table.common.drain(0..6));
+        }
+
+        Ok(Game { players, table })
+    }
+
+    // Private functions
     fn generate_players(num_players: usize) -> Result<Vec<Player>, String> {
         let mut colors = card::COLORS.to_vec();
 
@@ -50,16 +77,5 @@ impl Game {
         colors.shuffle(&mut thread_rng());
 
         Ok(colors.into_iter().map(Player::from).collect())
-    }
-
-    pub fn new(num_players: usize) -> Result<Self, String> {
-        let mut table = Table::new(num_players);
-        let mut players = Game::generate_players(num_players)?;
-
-        for player in &mut players {
-            player.hand.extend(table.common.drain(0..6));
-        }
-
-        Ok(Game { players, table })
     }
 }
