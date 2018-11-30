@@ -6,12 +6,12 @@ pub mod table;
 pub mod player;
 
 use self::table::Table;
-use self::card::Monad;
+use self::card::{Value, Monad};
 use self::player::Player;
 use std::io;
 
 
-struct Game {
+pub struct Game {
     players: Vec<Player>,
     table: Table,
 }
@@ -19,7 +19,7 @@ struct Game {
 impl Game {
     // Public functions
     pub fn trade(&mut self, player: usize){
-        let mut player = &self.players[player];
+        let mut player = &mut self.players[player];
         let mut card1 = String::new();
         let mut card2 = String::new();
 
@@ -38,9 +38,39 @@ impl Game {
             let card2: usize = card2.trim().parse()
                 .expect("Please type a number!");
             
-            let value = player.get_trade_value(card1, card2);
+            let card_value = match player.get_trade_value(card1, card2) {
+                Ok(value) => value,
+                Err(msg) => {
+                    println!("{}", msg);
+                    continue;
+                },
+            };
 
-            
+            use self::card::Value::*;
+            let card = match card_value {
+                Common => self.table.bi.pop(),
+                Bi => self.table.tri.pop(),
+                Tri => self.table.quad.pop(),
+                Quad => self.table.quint.pop(),
+                Quint => {
+                    player.monads.push(self.table.monad.pop().unwrap());
+                    return;
+                },
+            };
+
+            match card {
+                Some(c) => {
+                    let deck = self.table.get_deck(card_value);
+                    deck.insert(0, player.hand.remove(card1));
+                    deck.insert(0, player.hand.remove(card2));
+                    player.hand.push(c);
+                }
+                None => {
+                    println!("You can't buy any more of that card!");
+                    continue;
+                }
+            }
+            return;
         }
     }
 

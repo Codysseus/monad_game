@@ -42,6 +42,17 @@ impl Table {
         table
     }
 
+    pub fn get_deck(&mut self, value: card::Value) -> &mut Deck{
+        use self::card::Value::*;
+        match value {
+            Common => &mut self.common,
+            Bi     => &mut self.bi,
+            Tri    => &mut self.tri,
+            Quad   => &mut self.quad,
+            Quint  => &mut self.quint,
+        }
+    }
+
     fn shuffle_decks(&mut self) {
         self.bi    .shuffle();
         self.tri   .shuffle();
