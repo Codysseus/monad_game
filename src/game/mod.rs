@@ -28,6 +28,41 @@ pub struct Game {
 
 impl Game {
     // Public functions
+    pub fn leap(&mut self, player: usize) -> Result<String, String>{
+        let player = &mut self.players[player];
+        let commons = player.hand.into_iter().filter(|c| c.0 == Value::Common).collect::<Vec<self::card::Card>>();
+        if commons.len() < 4 {
+            return Err(String::from("Not enough commons to leap!"));
+        }
+
+        let num_commons = loop {
+            println!("Enter how many commons you want to trade! (4 -> Tri; 5 -> Quad; 6 -> Quint)");
+            let x = read_uint_from_user();
+            if x <= commons.len() && x > 2 {
+                if x == 3 {
+                    return Err("You decided not to leap!");
+                }
+                break x;
+            }
+        };
+
+        let selected_commons: Vec<Card> = Vec::new();
+        for i in 0..num_commons {
+            loop {
+                let card_num = read_uint_from_user();
+                match card_num {
+                    1..num_commons => {
+                        if selected_commons.contains(
+                        selected_commons.push(player.hand[card_num]); break;
+                    },
+                    0              => return Err(String::from("You decided not to leap!")),
+                    _              => {println!("Not a valid selection! Please try again."); continue;},
+                }
+            }
+        }
+
+        Ok(String::from("You leapt ahead!"))
+    }
     pub fn buy(&mut self, player: usize) -> Result<String, String>{
         let player = &mut self.players[player];
         let mut cards: Vec<usize> = Vec::new();
