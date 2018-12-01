@@ -28,6 +28,55 @@ pub struct Game {
 
 impl Game {
     // Public functions
+    pub fn buy(&mut self, player: usize) -> Result<String, String>{
+        loop {
+            let mut player = &mut self.players[player];
+            let mut cards: Vec<usize> = Vec::new();
+            loop {
+                println!("Enter the number of a card you want to use.");
+                match player.select_card_in_hand() {
+                    Ok(c)  => cards.push(c),
+                    Err(m) => { println!("{} Let's see if you can buy anything with this!", m); break; },
+                };
+            }
+            cards.dedup();
+
+            // Iterate through the card values in the hand
+            // Simultaniously sum the values and find the largest value
+            let mut max_value: usize = 0;
+            let mut buy_value: usize = 0;
+            cards.iter().map(|p| player.hand[*p].get_num()).for_each(|v| {
+                buy_value += v;
+                if v > max_value {
+                    max_value = v;
+                }
+            });
+
+            loop {
+                println!("Pick the deck you want to buy from!");
+                let choice = self.table.select_deck_value()?;
+
+                let value = match choice {
+                    Some(v) => v.num(),
+                    None    => 80,
+                };
+
+                if max_value < value && buy_value >= value {
+                    match choice {
+                        Some(v) => player.hand.push(self.table.draw_top(v).unwrap()),
+                        None    => player.monads.push(self.table.monad.pop().unwrap()),
+                    }
+                    for i in cards.iter() {
+                        self.table.return_card(player.hand.remove(*i));
+                    }
+                    return Ok(String::from("You bought a card!"));
+                }
+                println!("Either you didn't have enough points or you tried buying something of the same value!");
+            }
+            cards.clear();
+        }
+    }
+
     pub fn trade(&mut self, player: usize) -> Result<String, String>{
         let player = &mut self.players[player];
         let mut card_value: card::Value;

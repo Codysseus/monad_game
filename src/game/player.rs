@@ -55,8 +55,8 @@ impl Player {
     pub fn select_card_in_hand(&self) -> Result<usize, String> {
         loop {
             let n = read_uint_from_user();
-            if n <= self.hand.len() + 1 {
-                if n == self.hand.len() + 1 {
+            if n <= self.hand.len() {
+                if n == 0 {
                     return Err(String::from("Exiting hand selection."));
                 }
                 break Ok(n);
