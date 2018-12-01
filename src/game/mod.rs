@@ -10,12 +10,6 @@ use self::card::Value;
 use self::player::Player;
 use std::io;
 
-
-pub struct Game {
-    players: Vec<Player>,
-    table: Table,
-}
-
 pub fn read_uint_from_user() -> usize {
     let mut string = String::new();
     loop {
@@ -27,9 +21,14 @@ pub fn read_uint_from_user() -> usize {
     }
 }
 
+pub struct Game {
+    players: Vec<Player>,
+    table: Table,
+}
+
 impl Game {
     // Public functions
-    pub fn trade(&mut self, player: usize) {
+    pub fn trade(&mut self, player: usize) -> Result<String, String>{
         let player = &mut self.players[player];
         let mut card_value: card::Value;
         let mut card1: usize = 0;
@@ -37,10 +36,10 @@ impl Game {
 
         let card = loop {
             println!("Please enter the first card for trading!");
-            card1 = read_uint_from_user();
+            card1 = player.select_card_in_hand()?;
 
             println!("Please enter the second card for trading!");
-            card2 = read_uint_from_user();
+            card2 = player.select_card_in_hand()?;
 
             card_value = match player.get_trade_value(card1, card2) {
                 Ok(v) => v,
@@ -52,7 +51,7 @@ impl Game {
                 None => {
                     player.monads.push(self.table.monad.pop().unwrap());
                     // Returns here because the main should already have stopped the game before the monads run out
-                    return;
+                    return Ok(String::from("Player bought a monad!"));
                 },
             };
 
@@ -65,11 +64,13 @@ impl Game {
 
         player.hand.push(card);
 
-        if player.is_bonus_pair(card1, card2){
+        if player.is_bonus_pair(card1, card2) {
+            println!("Woah! You picked a bonus pair!");
             let mut curr_value = card_value.prev();
             while curr_value.is_some() {
                 let v = curr_value.unwrap();
-                if let Some(c) = self.table.draw_top(v){
+                if let Some(c) = self.table.draw_top(v) {
+                    println!("Drew a card!");
                     player.hand.push(c);
                 }
                 curr_value = v.prev();
@@ -83,6 +84,7 @@ impl Game {
 
         discard_deck.insert(0, player.hand.remove(card1));
         discard_deck.insert(0, player.hand.remove(card2));
+        Ok(String::from("Trade completed successfully!"))
     }
 
     pub fn new(num_players: usize) -> Result<Self, String> {

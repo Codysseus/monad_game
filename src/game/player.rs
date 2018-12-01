@@ -1,4 +1,5 @@
 use super::card::{self, Monad, Deck, Color, Value};
+use super::read_uint_from_user;
 
 pub struct Player {
     pub hand: Deck,
@@ -49,6 +50,18 @@ impl Player {
             (Yellow, Green)  => true,
             (Green,  Yellow) => true,
             (_, _)           => false,
+        }
+    }
+    pub fn select_card_in_hand(&self) -> Result<usize, String> {
+        loop {
+            let n = read_uint_from_user();
+            if n <= self.hand.len() + 1 {
+                if n == self.hand.len() + 1 {
+                    return Err(String::from("Don't want to trade, eh? Select something else then!"));
+                }
+                break Ok(n);
+            }
+            println!("{} is an invalid selection! Please try again.", n);
         }
     }
 }
