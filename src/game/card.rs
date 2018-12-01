@@ -50,6 +50,16 @@ impl Value {
             Quint  => Some(Quad),
         }
     }
+    pub fn num(&self) -> usize {
+        use self::Value::*;
+        match self {
+            Common => 1,
+            Bi => 3,
+            Tri => 7,
+            Quad => 16,
+            Quint => 36,
+        }
+    }
 }
 
 pub struct Card(pub Value, pub Color);
@@ -60,6 +70,9 @@ impl Card {
             Yellow | Red | Orange => Temp::Warm,
             _ => Temp::Cold,
         }
+    }
+    pub fn get_num(&self) -> usize {
+        self.0.num()
     }
 }
 

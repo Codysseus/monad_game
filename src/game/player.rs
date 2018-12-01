@@ -57,7 +57,7 @@ impl Player {
             let n = read_uint_from_user();
             if n <= self.hand.len() + 1 {
                 if n == self.hand.len() + 1 {
-                    return Err(String::from("Don't want to trade, eh? Select something else then!"));
+                    return Err(String::from("Exiting hand selection."));
                 }
                 break Ok(n);
             }

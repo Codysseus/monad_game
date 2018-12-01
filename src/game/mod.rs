@@ -77,13 +77,8 @@ impl Game {
             }
         }
 
-        let discard_deck = match card_value {
-            Value::Common => &mut self.table.discard,
-            _             => self.table.get_deck(card_value),
-        };
-
-        discard_deck.insert(0, player.hand.remove(card1));
-        discard_deck.insert(0, player.hand.remove(card2));
+        self.table.return_card(player.hand.remove(card1));
+        self.table.return_card(player.hand.remove(card2));
         Ok(String::from("Trade completed successfully!"))
     }
 

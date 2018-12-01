@@ -55,6 +55,13 @@ impl Table {
     pub fn draw_top(&mut self, value: card::Value) -> Option<Card> {
         return self.get_deck(value).pop()
     }
+    pub fn return_card(&mut self, card: Card){
+        let discard_deck = match card.0 {
+            self::card::Value::Common => &mut self.discard,
+            v                         => self.get_deck(v),
+        };
+        discard_deck.insert(0, card);
+    }
 
     fn shuffle_decks(&mut self) {
         self.bi    .shuffle();
