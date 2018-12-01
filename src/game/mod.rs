@@ -31,6 +31,7 @@ impl Game {
     // Public functions
     pub fn trade(&mut self, player: usize) {
         let player = &mut self.players[player];
+        let mut card_value: card::Value;
         let mut card1: usize = 0;
         let mut card2: usize = 0;
 
@@ -41,7 +42,7 @@ impl Game {
             println!("Please enter the second card for trading!");
             card2 = read_uint_from_user();
 
-            let card_value = match player.get_trade_value(card1, card2) {
+            card_value = match player.get_trade_value(card1, card2) {
                 Ok(v) => v,
                 Err(m) => { println!("{}", m); continue; },
             };
@@ -62,14 +63,26 @@ impl Game {
             println!("You can't draw any more of that card! Please choose different cards!");
         };
 
-        let discard_deck = match card.0 {
+        let discard_deck = match card_value {
             Value::Common => &mut self.table.discard,
-            _             => self.table.get_deck(card.0),
+            _             => self.table.get_deck(card_value),
         };
+
+        player.hand.push(card);
+
+        if player.is_bonus_pair(card1, card2){
+            let mut curr_value = card_value.prev();
+            while curr_value.is_some() {
+                let v = curr_value.unwrap();
+                if let Some(c) = self.table.draw_top(v){
+                    player.hand.push(c);
+                }
+                curr_value = v.prev();
+            }
+        }
 
         discard_deck.insert(0, player.hand.remove(card1));
         discard_deck.insert(0, player.hand.remove(card2));
-        player.hand.push(card);
     }
 
     pub fn new(num_players: usize) -> Result<Self, String> {

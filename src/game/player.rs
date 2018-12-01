@@ -39,4 +39,16 @@ impl Player {
         }
         return Ok(card1.0);
     }
+    pub fn is_bonus_pair(&self, card1: usize, card2: usize) -> bool {
+        use self::Color::*;
+        match (self.hand[card1].1, self.hand[card2].1){
+            (Orange, Blue)   => true,
+            (Blue,   Orange) => true,
+            (Red,    Purple) => true,
+            (Purple, Red)    => true,
+            (Yellow, Green)  => true,
+            (Green,  Yellow) => true,
+            (_, _)           => false,
+        }
+    }
 }

@@ -30,7 +30,7 @@ pub enum Value {
     Quint,
 }
 impl Value {
-    pub fn succ(self) -> Option<Value> {
+    pub fn succ(&self) -> Option<Value> {
         use self::Value::*;
         match self {
             Common => Some(Bi),
@@ -59,18 +59,6 @@ impl Card {
         match self.1 {
             Yellow | Red | Orange => Temp::Warm,
             _ => Temp::Cold,
-        }
-    }
-    pub fn is_bonus_pair(&self, card: Card) -> bool{
-        use self::Color::*;
-        match (self.1, card.1){
-            (Orange, Blue)   => true,
-            (Blue,   Orange) => true,
-            (Red,    Purple) => true,
-            (Purple, Red)    => true,
-            (Yellow, Green)  => true,
-            (Green,  Yellow) => true,
-            (_, _)           => false,
         }
     }
 }
