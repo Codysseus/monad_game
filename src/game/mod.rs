@@ -63,11 +63,6 @@ impl Game {
             println!("You can't draw any more of that card! Please choose different cards!");
         };
 
-        let discard_deck = match card_value {
-            Value::Common => &mut self.table.discard,
-            _             => self.table.get_deck(card_value),
-        };
-
         player.hand.push(card);
 
         if player.is_bonus_pair(card1, card2){
@@ -80,6 +75,11 @@ impl Game {
                 curr_value = v.prev();
             }
         }
+
+        let discard_deck = match card_value {
+            Value::Common => &mut self.table.discard,
+            _             => self.table.get_deck(card_value),
+        };
 
         discard_deck.insert(0, player.hand.remove(card1));
         discard_deck.insert(0, player.hand.remove(card2));
