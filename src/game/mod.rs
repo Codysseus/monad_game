@@ -34,7 +34,7 @@ impl Game {
         let mut card1: usize = 0;
         let mut card2: usize = 0;
 
-        let card = loop {
+        loop {
             println!("Please enter the first card for trading!");
             card1 = player.select_card_in_hand()?;
 
@@ -46,23 +46,21 @@ impl Game {
                 Err(m) => { println!("{}", m); continue; },
             };
 
-            let card = match card_value.succ() {
-                Some(v) => self.table.draw_top(v),
+            match card_value.succ() {
+                Some(v) => {
+                    if let Some(c) = self.table.draw_top(v){
+                        player.hand.push(c);
+                        break;
+                    }
+                },
                 None => {
-                    player.monads.push(self.table.monad.pop().unwrap());
-                    // Returns here because the main should already have stopped the game before the monads run out
-                    return Ok(String::from("Player bought a monad!"));
+                    player.monads.push(self.table.monad.pop()
+                                       .expect("Woah! We ran out of Monads! This isn't supposed to happen!"));
+                    break;
                 },
             };
-
-            if let Some(v) = card {
-                break v;
-            }
-
             println!("You can't draw any more of that card! Please choose different cards!");
         };
-
-        player.hand.push(card);
 
         if player.is_bonus_pair(card1, card2) {
             println!("Woah! You picked a bonus pair!");
