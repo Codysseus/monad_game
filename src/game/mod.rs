@@ -5,15 +5,18 @@ pub mod card;
 pub mod table;
 pub mod player;
 
-use self::table::Table;
-use self::card::Value;
-use self::player::Player;
-use std::io;
+use self::{
+    table::Table,
+    card::{Card, Value},
+    player::Player,
+};
+
+use std::io::stdin;
 
 pub fn read_uint_from_user() -> usize {
     let mut string = String::new();
     loop {
-        io::stdin().read_line(&mut string).expect("Problem reading input from user!");
+        stdin().read_line(&mut string).expect("Problem reading input from user!");
         if let Ok(r) = string.trim().parse::<usize>() {
             break r;
         }
@@ -28,9 +31,14 @@ pub struct Game {
 
 impl Game {
     // Public functions
-    pub fn leap(&mut self, player: usize) -> Result<String, String>{
+    pub fn leap(&mut self, player: usize) -> Result<(), String> {
         let player = &mut self.players[player];
-        let commons = player.hand.into_iter().filter(|c| c.0 == Value::Common).collect::<Vec<self::card::Card>>();
+        let commons = player
+            .hand
+            .iter()
+            .filter(|card| card.is_common()) // Predicate takes &&Card
+            .collect::<Vec<_>>();
+        
         if commons.len() < 4 {
             return Err(String::from("Not enough commons to leap!"));
         }
@@ -38,10 +46,10 @@ impl Game {
         let num_commons = loop {
             println!("Enter how many commons you want to trade! (4 -> Tri; 5 -> Quad; 6 -> Quint)");
             let x = read_uint_from_user();
-            if x <= commons.len() && x > 2 {
-                if x == 3 {
-                    return Err("You decided not to leap!");
-                }
+            if x == 3 {
+                return Err(String::from("You decided not to leap!"));
+            }
+            if x > 3 && x <= commons.len() {
                 break x;
             }
         };
@@ -50,121 +58,130 @@ impl Game {
         for i in 0..num_commons {
             loop {
                 let card_num = read_uint_from_user();
-                match card_num {
-                    1..num_commons => {
-                        if selected_commons.contains(
-                        selected_commons.push(player.hand[card_num]); break;
-                    },
-                    0              => return Err(String::from("You decided not to leap!")),
-                    _              => {println!("Not a valid selection! Please try again."); continue;},
+                if card_num == 0 {
+                    return Err(String::from("You decided not to leap!"));
                 }
+                // if card_num < num_commons {
+                //     if selected_commons.contains() {
+                //         selected_commons.push(player.hand[card_num]);
+                //         break;
+                //     }
+                // }
+                println!("Not a valid selection! Please try again.");
             }
         }
 
-        Ok(String::from("You leapt ahead!"))
+        Ok(())
     }
-    pub fn buy(&mut self, player: usize) -> Result<String, String>{
+
+    pub fn buy(&mut self, player: usize) -> Result<(), String>{
         let player = &mut self.players[player];
         let mut cards: Vec<usize> = Vec::new();
         loop {
             println!("Enter the number of a card you want to use.");
             match player.select_card_in_hand() {
-                Ok(c)  => cards.push(c),
-                Err(m) => {
+                Ok(card)     => cards.push(card),
+                Err(message) => {
                     if cards.is_empty() {
                         return Err(String::from("No cards selected! Exiting buying mode."));
                     }
-                    println!("{} Let's see if you can buy anything with this!", m);
+                    println!("{} Let's see if you can buy anything with this!", message);
                     break;
                 },
             };
         }
         cards.dedup();
 
-        // Iterate through the card values in the hand
-        // Simultaniously sum the values and find the largest value
-        let mut max_value: usize = 0;
-        let mut buy_value: usize = 0;
-        cards.iter().map(|p| player.hand[*p].get_num()).for_each(|v| {
-            buy_value += v;
-            if v > max_value {
-                max_value = v;
-            }
-        });
+        let nums = cards
+            .iter()
+            .map(|p| &player.hand[*p])
+            .map(Card::num)
+            .collect::<Vec<_>>();
+        
+        let buy_value = nums.iter().sum::<usize>();
+        let max_value = nums.into_iter().max().unwrap_or(0);
 
         loop {
             println!("Pick the deck you want to buy from!");
             let choice = self.table.select_deck_value()?;
 
-            let cost = match choice {
-                Some(v) => v.num(),
-                None    => 80,
-            };
+            let cost = choice
+                .as_ref()
+                .map(Value::num)
+                .unwrap_or(80);
 
-            if max_value < cost && buy_value >= cost {
-                match choice {
-                    Some(v) => player.hand.push(self.table.draw_top(v).unwrap()),
-                    None    => player.monads.push(self.table.monad.pop().unwrap()),
-                }
-                for i in cards.iter() {
-                    self.table.return_card(player.hand.remove(*i));
-                }
-                return Ok(String::from("You bought a card!"));
+            if max_value >= cost {
+                println!("Can't buy something of the same value!");
+                continue;
             }
-            println!("Either you didn't have enough points or you tried buying something of the same value!");
+            if buy_value < cost {
+                println!("Not enough points!");
+                continue;
+            }
+
+            if let Some(value) = choice {
+                player.draw_card(value, &mut self.table);
+            } else {
+                player.draw_monad(&mut self.table);
+            }
+
+            for i in cards {
+                self.table.return_card(player.hand.remove(i));
+            }
+
+            break Ok(());
         }
     }
 
-    pub fn trade(&mut self, player: usize) -> Result<String, String>{
+    pub fn trade(&mut self, player: usize) -> Result<(), String> {
         let player = &mut self.players[player];
-        let mut card_value: card::Value;
-        let mut card1: usize;
-        let mut card2: usize;
 
-        loop {
+        let (card1, card2, value) = loop {
             println!("Please enter the first card for trading!");
-            card1 = player.select_card_in_hand()?;
+            let card1 = player.select_card_in_hand()?;
 
             println!("Please enter the second card for trading!");
-            card2 = player.select_card_in_hand()?;
+            let card2 = player.select_card_in_hand()?;
 
-            card_value = match player.get_trade_value(card1, card2) {
+            let value = match player.trade_value(card1, card2) {
                 Ok(v) => v,
-                Err(m) => { println!("{}", m); continue; },
+                Err(m) => {
+                    println!("{}", m);
+                    continue;
+                },
             };
 
-            match card_value.succ() {
-                Some(v) => {
-                    if let Some(c) = self.table.draw_top(v){
-                        player.hand.push(c);
-                        break;
-                    }
-                },
-                None => {
-                    player.monads.push(self.table.monad.pop()
-                                       .expect("Woah! We ran out of Monads! This isn't supposed to happen!"));
-                    break;
-                },
-            };
-            println!("You can't draw any more of that card! Please choose different cards!");
+            if let Some(v) = value.succ() {
+                if player.draw_card(v, &mut self.table).is_none() {
+                    println!("You can't draw any more {} cards! Please choose different cards!", v);
+                    continue;
+                }
+            } else {
+                player
+                    .draw_monad(&mut self.table)
+                    .expect("Woah! We ran out of Monads! This isn't supposed to happen!");
+            }
+
+            break (card1, card2, value);
         };
 
         if player.is_bonus_pair(card1, card2) {
             println!("Woah! You picked a bonus pair!");
-            let mut curr_value = card_value.prev();
-            while curr_value.is_some() {
-                let v = curr_value.unwrap();
-                if let Some(c) = self.table.draw_top(v) {
-                    println!("Drew a card!");
-                    player.hand.push(c);
-                }
-                curr_value = v.prev();
+            let mut maybe_curr_value = value.prev();
+
+            while let Some(curr_value) = maybe_curr_value {
+                player
+                    .draw_card(curr_value, &mut self.table)
+                    .map(|card| println!("Drew a {} {} card!", card.color, card.value));
+                
+                maybe_curr_value = curr_value.prev();
             }
         }
 
         self.table.return_card(player.hand.remove(card1));
         self.table.return_card(player.hand.remove(card2));
-        Ok(String::from("Trade completed successfully!"))
+
+        Ok(())
     }
 
     pub fn new(num_players: usize) -> Result<Self, String> {
