@@ -1,5 +1,8 @@
-use super::card::{self, Monad, Deck, Color, Value};
-use super::read_uint_from_user;
+use super::{
+    card::{self, Monad, Deck, Card, Color, Value},
+    table::Table,
+    read_uint_from_user,
+};
 
 pub struct Player {
     pub hand: Deck,
@@ -18,50 +21,69 @@ impl From<card::Color> for Player {
 }
 
 impl Player {
-    pub fn get_trade_value(&self, card1: usize, card2: usize) -> Result<Value, String> {
+    pub fn trade_value(&self, card1: usize, card2: usize) -> Result<Value, String> {
         let card1 = &self.hand[card1];
         let card2 = &self.hand[card2];
 
-        if card1.get_temp() == card2.get_temp() {
+        if card1.temp() == card2.temp() {
             return Err(String::from("Cards should not be the same tempurature!"));
         }
-        if card1.0 != card2.0 {
-            if card1.1 != self.identity && card2.1 != self.identity {
-                return Err(String::from("Cards should have the same value when trading! Or if they don't, one should at least be your identity color!"));
-            }
-            else {
-                return if card1.1 == self.identity {
-                    Ok(card2.0)
-                }
-                else {
-                    Ok(card1.0)
-                }
-            }
+
+        if card1.value == card2.value {
+            return Ok(card1.value);
         }
-        return Ok(card1.0);
+        
+        if self.matches_color(card1) {
+            return Ok(card2.value);
+        }
+
+        if self.matches_color(card2) {
+            return Ok(card1.value);
+        }
+
+        Err(String::from("Cards should have the same value when trading! Or if they don't, one should at least be your identity color!"))
     }
+
     pub fn is_bonus_pair(&self, card1: usize, card2: usize) -> bool {
         use self::Color::*;
-        match (self.hand[card1].1, self.hand[card2].1){
-            (Orange, Blue)   => true,
-            (Blue,   Orange) => true,
-            (Red,    Purple) => true,
-            (Purple, Red)    => true,
-            (Yellow, Green)  => true,
+        match (self.hand[card1].color, self.hand[card2].color) {
+            (Orange, Blue  ) |
+            (Blue,   Orange) | 
+            (Red,    Purple) | 
+            (Purple, Red   ) | 
+            (Yellow, Green ) | 
             (Green,  Yellow) => true,
-            (_, _)           => false,
+            _                => false,
         }
     }
+
     pub fn select_card_in_hand(&self) -> Result<usize, String> {
         loop {
             let n = read_uint_from_user();
+            if n == 0 {
+                break Err(String::from("Exiting hand selection."));
+            }
             if n <= self.hand.len() {
-                if n == 0 {
-                    return Err(String::from("Exiting hand selection."));
-                }
                 break Ok(n);
             }
             println!("{} is an invalid selection! Please try again.", n);
         }
+    }
+
+    pub fn draw_card(&mut self, value: Value, table: &mut Table) -> Option<&Card> {
+        if let Some(card) = table.draw_top(value) {
+            self.hand.push(card);
+            self.hand.last()
+        } else {
+            None
+        }
+    }
+
+    pub fn draw_monad(&mut self, table: &mut Table) -> Option<()> {
+        table.monad.pop().map(|monad| self.monads.push(monad))
+    }
+
+    fn matches_color(&self, card: &Card) -> bool {
+        self.identity == card.color
     }
 }

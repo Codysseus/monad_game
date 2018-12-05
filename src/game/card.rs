@@ -1,6 +1,8 @@
-#![allow(dead_code)]
 use rand::{seq::SliceRandom, thread_rng};
-use std::ops::{Deref, DerefMut};
+use std::{
+    fmt,
+    ops::{Deref, DerefMut},
+};
 
 #[must_use]
 pub struct Monad;
@@ -11,7 +13,7 @@ pub enum Temp {
     Cold,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Color {
     Red,
     Orange,
@@ -21,7 +23,13 @@ pub enum Color {
     Green,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+impl fmt::Display for Color {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?}", self)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Value {
     Common,
     Bi,
@@ -29,6 +37,13 @@ pub enum Value {
     Quad,
     Quint,
 }
+
+impl fmt::Display for Value {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?}", self)
+    }
+}
+
 impl Value {
     pub fn succ(&self) -> Option<Value> {
         use self::Value::*;
@@ -54,25 +69,34 @@ impl Value {
         use self::Value::*;
         match self {
             Common => 1,
-            Bi => 3,
-            Tri => 7,
-            Quad => 16,
-            Quint => 36,
+            Bi     => 3,
+            Tri    => 7,
+            Quad   => 16,
+            Quint  => 36,
         }
     }
 }
 
-pub struct Card(pub Value, pub Color);
+pub struct Card {
+    pub value: Value,
+    pub color: Color,
+}
+
 impl Card {
-    pub fn get_temp(&self) -> Temp {
+    pub fn temp(&self) -> Temp {
         use self::Color::*;
-        match self.1 {
-            Yellow | Red | Orange => Temp::Warm,
-            _ => Temp::Cold,
+        match self.color {
+            Red | Orange | Yellow => Temp::Warm,
+            Purple | Blue | Green => Temp::Cold,
         }
     }
-    pub fn get_num(&self) -> usize {
-        self.0.num()
+
+    pub fn num(&self) -> usize {
+        self.value.num()
+    }
+
+    pub fn is_common(&self) -> bool {
+        self.value == Value::Common
     }
 }
 
