@@ -74,26 +74,29 @@ impl Game {
         }
 
         if num_commons != commons.len() {
-            for i in 0..num_commons {
+            loop {
                 println!("Here are all the commons to select. The first {} cards on the left will be traded in.", num_commons);
+                println!("Enter the number of the card to move it left.");
+                println!("Enter {} to accept selection.", commons.len());
                 let card_refs = player.indexes_to_cards(&commons);
                 for i in 0..card_refs.len() {
                     print!("{}: {}  ", i, card_refs[i]);
                 }
                 println!("");
-                println!("Enter {} to exit leap.", commons.len());
 
-                loop {
-                    let card_num = read_uint_from_user();
-                    if card_num == commons.len() {
-                        return Err(String::from("You decided not to leap!"));
-                    }
-                    if card_num < commons.len() {
-                        commons.swap(card_num, i);
-                        break;
-                    }
-                    println!("Not a valid selection! Please try again.");
+                let card_num = read_uint_from_user();
+                if card_num == 0 {
+                    continue;
                 }
+                if card_num == commons.len() {
+                    return Err(String::from("You decided not to leap!"));
+                }
+                if card_num < commons.len() {
+                    let index = card_num - 1;
+                    commons.swap(card_num, index);
+                    break;
+                }
+                println!("Not a valid selection! Please try again.");
             }
             commons.split_off(num_commons);
         }
