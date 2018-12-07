@@ -50,7 +50,6 @@ impl Game {
         Err(String::from("You can't draw, there are no commons left!"))
     }
     pub fn leap(&mut self, player: usize) -> Result<(), String> {
-        use self::card::Value::*;
         let player = &mut self.players[player];
         let mut commons: Vec<usize> = Vec::new();
         let mut num_commons: usize;
