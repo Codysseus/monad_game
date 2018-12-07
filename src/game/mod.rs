@@ -34,11 +34,13 @@ impl Game {
     pub fn leap(&mut self, player: usize) -> Result<(), String> {
         use self::card::Value::*;
         let player = &mut self.players[player];
-        let mut commons = player
-            .hand
-            .iter()
-            .filter(|card| card.is_common()) // Predicate takes &&Card
-            .collect::<Vec<_>>();
+        let mut commons: Vec<usize> = Vec::new();
+
+        for i in 0..player.hand.len() {
+            if player.hand[i].is_common() {
+                commons.push(i);
+            }
+        }
 
         if commons.len() < 4 {
             return Err(String::from("Not enough commons to leap!"));
@@ -69,21 +71,20 @@ impl Game {
         };
 
         if num_commons != commons.len() {
-            for _i in 0..num_commons {
+            for i in 0..num_commons {
                 loop {
                     let card_num = read_uint_from_user();
                     if card_num == 0 {
                         return Err(String::from("You decided not to leap!"));
                     }
                     if card_num <= commons.len() {
-                        let last = commons.len() - 1;
-                        commons.swap(card_num, last);
+                        commons.swap(card_num, i);
                         break;
                     }
                     println!("Not a valid selection! Please try again.");
                 }
             }
-            commons = commons.clone().split_off(commons.len() - num_commons);
+            commons.split_off(num_commons);
         }
 
         let card = match num_commons {
