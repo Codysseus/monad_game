@@ -35,6 +35,7 @@ impl Game {
         use self::card::Value::*;
         let player = &mut self.players[player];
         let mut commons: Vec<usize> = Vec::new();
+        let mut num_commons: usize;
 
         for i in 0..player.hand.len() {
             if player.hand[i].is_common() {
@@ -46,29 +47,14 @@ impl Game {
             return Err(String::from("Not enough commons to leap!"));
         }
 
-        let num_commons = loop {
-            println!("Enter how many commons you want to trade! (4 -> Tri; 5 -> Quad; 6 -> Quint)");
-            let x = read_uint_from_user();
-            if x == 3 {
-                return Err(String::from("You decided not to leap!"));
+        loop {
+            num_commons = Game::select_commons_leap(&commons)?;
+            let deck_value = Game::translate_commons_for_leap(num_commons);
+            if ! self.table.deck(deck_value).is_empty() {
+                break;
             }
-            if x > 3 && x <= commons.len() {
-                let deck = match x {
-                    4 => self.table.deck(Tri),
-                    5 => self.table.deck(Quad),
-                    _ => self.table.deck(Quint),
-                };
-                if deck.len() > 0 {
-                    break x;
-                }
-                println!("That deck is out of cards!");
-                continue;
-            }
-            if x > commons.len() && x < 7 {
-                println!("You don't have enough cards to trade in!");
-            }
-            println!("That is an incorrect selection!");
-        };
+            println!("That deck is empty!");
+        }
 
         if num_commons != commons.len() {
             for i in 0..num_commons {
@@ -87,13 +73,15 @@ impl Game {
             commons.split_off(num_commons);
         }
 
-        let card = match num_commons {
-            4 => self.table.draw_top(Tri),
-            5 => self.table.draw_top(Quad),
-            _ => self.table.draw_top(Quint),
-        };
+        let card = self.table.draw_top(
+            Game::translate_commons_for_leap(num_commons)
+        ).unwrap();
 
+        for elt in commons {
+            self.table.return_card(player.hand.remove(elt));
+        }
 
+        player.hand.push(card);
 
         Ok(())
     }
@@ -220,6 +208,7 @@ impl Game {
     }
 
     // Private functions
+    // Game::new() helper functions
     fn generate_players(num_players: usize) -> Result<Vec<Player>, String> {
         let mut colors = card::COLORS.to_vec();
 
@@ -241,5 +230,33 @@ impl Game {
         colors.shuffle(&mut thread_rng());
 
         Ok(colors.into_iter().map(Player::from).collect())
+    }
+
+    // Game::leap() helper functions
+    fn select_commons_leap(commons: & Vec<usize>) -> Result<usize, String> {
+        loop {
+            println!("Enter how many commons you want to trade! (3 -> Quit; 4 -> Tri; 5 -> Quad; 6 -> Quint)");
+            let x = read_uint_from_user();
+            if x == 3 {
+                break Err(String::from("You have decided not to leap! Exiting..."));
+            }
+            if x > 3 && x <= commons.len() {
+                break Ok(x);
+            }
+            if x > commons.len() && x < 7 {
+                println!("You don't have enough cards to trade in for that!!");
+            }
+            println!("That is an incorrect selection!");
+        }
+    }
+
+    // Using option for this makes it ugly and checks ensure that values range from 4-6
+    fn translate_commons_for_leap(value: usize) -> self::card::Value {
+        use self::card::Value::*;
+        match value {
+            4 => Tri,
+            5 => Quad,
+            _ => Quint,
+        }
     }
 }
