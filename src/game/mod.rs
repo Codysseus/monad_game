@@ -42,9 +42,9 @@ impl Game {
         Err(String::from("There are still commons in the common deck!"))
     }
     pub fn draw(&mut self, player: usize) -> Result<(), String> {
-        let player = &mut self.players[player];
-        if let Some(card) = self.table.draw_top(self::card::Value::Common) {
-            player.hand.push(card);
+        use self::card::Value::Common;
+        if let Some(card) = self.table.draw_top(Common) {
+            self.players[player].hand.push(card);
             return Ok(());
         }
         Err(String::from("You can't draw, there are no commons left!"))
