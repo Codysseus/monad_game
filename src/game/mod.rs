@@ -76,8 +76,8 @@ impl Game {
                         return Err(String::from("You decided not to leap!"));
                     }
                     if card_num <= commons.len() {
-                        let card = commons.remove(card_num);
-                        commons.push(card);
+                        let last = commons.len() - 1;
+                        commons.swap(card_num, last);
                         break;
                     }
                     println!("Not a valid selection! Please try again.");
