@@ -31,6 +31,24 @@ pub struct Game {
 
 impl Game {
     // Public functions
+    pub fn flip(&mut self) -> Result<(), String> {
+        use self::card::Value::Common;
+        if self.table.discard.is_empty() {
+            return Err(String::from("The discard pile is empty!"));
+        }
+        if self.table.deck(Common).is_empty() {
+            self.table.common.append(&mut self.table.discard);
+        }
+        Err(String::from("There are still commons in the common deck!"))
+    }
+    pub fn draw(&mut self, player: usize) -> Result<(), String> {
+        let player = &mut self.players[player];
+        if let Some(card) = self.table.draw_top(self::card::Value::Common) {
+            player.hand.push(card);
+            return Ok(());
+        }
+        Err(String::from("You can't draw, there are no commons left!"))
+    }
     pub fn leap(&mut self, player: usize) -> Result<(), String> {
         use self::card::Value::*;
         let player = &mut self.players[player];
