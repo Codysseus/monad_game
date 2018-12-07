@@ -51,7 +51,7 @@ impl Table {
                 3 => Tri,
                 4 => Quad,
                 5 => Quint,
-                6 | 7 => break Ok(None),
+                6 => break Ok(None),
                 n => {
                     println!("{} is an invalid selection! Please try again.", n);
                     continue;

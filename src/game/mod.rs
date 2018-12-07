@@ -32,13 +32,14 @@ pub struct Game {
 impl Game {
     // Public functions
     pub fn leap(&mut self, player: usize) -> Result<(), String> {
+        use self::card::Value::*;
         let player = &mut self.players[player];
-        let commons = player
+        let mut commons = player
             .hand
             .iter()
             .filter(|card| card.is_common()) // Predicate takes &&Card
             .collect::<Vec<_>>();
-        
+
         if commons.len() < 4 {
             return Err(String::from("Not enough commons to leap!"));
         }
@@ -50,26 +51,48 @@ impl Game {
                 return Err(String::from("You decided not to leap!"));
             }
             if x > 3 && x <= commons.len() {
-                break x;
+                let deck = match x {
+                    4 => self.table.deck(Tri),
+                    5 => self.table.deck(Quad),
+                    _ => self.table.deck(Quint),
+                };
+                if deck.len() > 0 {
+                    break x;
+                }
+                println!("That deck is out of cards!");
+                continue;
             }
+            if x > commons.len() && x < 7 {
+                println!("You don't have enough cards to trade in!");
+            }
+            println!("That is an incorrect selection!");
         };
 
-        let selected_commons: Vec<Card> = Vec::new();
-        for i in 0..num_commons {
-            loop {
-                let card_num = read_uint_from_user();
-                if card_num == 0 {
-                    return Err(String::from("You decided not to leap!"));
+        if num_commons != commons.len() {
+            for _i in 0..num_commons {
+                loop {
+                    let card_num = read_uint_from_user();
+                    if card_num == 0 {
+                        return Err(String::from("You decided not to leap!"));
+                    }
+                    if card_num <= commons.len() {
+                        let card = commons.remove(card_num);
+                        commons.push(card);
+                        break;
+                    }
+                    println!("Not a valid selection! Please try again.");
                 }
-                // if card_num < num_commons {
-                //     if selected_commons.contains() {
-                //         selected_commons.push(player.hand[card_num]);
-                //         break;
-                //     }
-                // }
-                println!("Not a valid selection! Please try again.");
             }
+            commons = commons.clone().split_off(commons.len() - num_commons);
         }
+
+        let card = match num_commons {
+            4 => self.table.draw_top(Tri),
+            5 => self.table.draw_top(Quad),
+            _ => self.table.draw_top(Quint),
+        };
+
+
 
         Ok(())
     }
@@ -97,7 +120,7 @@ impl Game {
             .map(|p| &player.hand[*p])
             .map(Card::num)
             .collect::<Vec<_>>();
-        
+
         let buy_value = nums.iter().sum::<usize>();
         let max_value = nums.into_iter().max().unwrap_or(0);
 
@@ -173,7 +196,7 @@ impl Game {
                 player
                     .draw_card(curr_value, &mut self.table)
                     .map(|card| println!("Drew a {} {} card!", card.color, card.value));
-                
+
                 maybe_curr_value = curr_value.prev();
             }
         }
@@ -210,7 +233,7 @@ impl Game {
             4 => {
                 colors.remove(2);
                 colors.remove(5);
-            }
+            },
             _ => return Err(String::from("There should only be 2-4 players!")),
         }
 
