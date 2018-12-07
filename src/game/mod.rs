@@ -264,7 +264,7 @@ impl Game {
             },
             4 => {
                 colors.remove(2);
-                colors.remove(5);
+                colors.remove(4);
             },
             _ => return Err(String::from("There should only be 2-4 players!")),
         }
