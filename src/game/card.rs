@@ -119,7 +119,7 @@ impl Deck {
     pub fn to_string(&self) -> String {
         let mut string = String::new();
         for card in self.iter() {
-            string += &format!("{} ", card);
+            string += &format!("{}\t", card);
         }
         string
     }

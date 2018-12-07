@@ -115,6 +115,7 @@ impl Game {
         let player = &mut self.players[player];
         let mut cards: Vec<usize> = Vec::new();
         loop {
+            player.print_hand();
             println!("Enter the number of a card you want to use.");
 
             match player.select_card_in_hand() {
@@ -226,6 +227,7 @@ impl Game {
         let mut table = Table::new(num_players);
         let mut players = Game::generate_players(num_players)?;
 
+        table.print_decks();
         for player in &mut players {
             player.hand.extend(table.common.drain(0..6));
         }
@@ -235,6 +237,7 @@ impl Game {
 
     pub fn print_state(&self, player: usize) {
         println!("{}", "-".repeat(20));
+        println!("Player color: {}", self.players[player].identity);
         println!("Player {}'s hand: ", player);
         self.players[player].print_hand();
         println!("{}", "-".repeat(20));

@@ -1,10 +1,10 @@
 extern crate rand;
-use std::io;
-
+use std::io::{stdout, Write};
 mod game;
 
 fn main() {
-    println!("Hello and welcome to the game of monad! Choose the number of players.");
+    println!("Hello and welcome to the game of monad!");
+    print!("Choose the number of players: ");
     let num_players = game::read_uint_from_user();
     let mut game = match game::Game::new(num_players){
         Ok(g) => g,
@@ -19,6 +19,8 @@ fn main() {
         println!("It is now player {}'s turn!", player);
         loop {
             println!("Do you want to 0: Print State, 1: Draw, 2: Flip, 3: Trade, 4: Buy, or 5: Leap?");
+            print!("> ");
+            stdout().flush();
             match game::read_uint_from_user() {
                 0 => game.print_state(player),
                 1 => {
