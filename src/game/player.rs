@@ -69,6 +69,12 @@ impl Player {
             println!("{} is an invalid selection! Please try again.", n);
         }
     }
+    pub fn print_hand(&self) {
+        for card in self.hand.iter() {
+            print!("{}, ", card);
+        }
+        println!("");
+    }
 
     pub fn draw_card(&mut self, value: Value, table: &mut Table) -> Option<&Card> {
         if let Some(card) = table.draw_top(value) {

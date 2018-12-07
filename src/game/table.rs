@@ -41,6 +41,15 @@ impl Table {
         table
     }
 
+    pub fn print_decks(&self) {
+        println!("Common: {}",  self.common.len());
+        println!("Discard: {}", self.discard.to_string());
+        println!("Bi: {}",      self.bi.to_string());
+        println!("Tri: {}",     self.tri.to_string());
+        println!("Quad: {}",    self.quad.to_string());
+        println!("Quint: {}",   self.quint.to_string());
+    }
+
     pub fn select_deck_value(&self) -> Result<Option<self::card::Value>, String> {
         use self::card::Value::*;
         loop {

@@ -81,6 +81,11 @@ pub struct Card {
     pub value: Value,
     pub color: Color,
 }
+impl fmt::Display for Card {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}:{}", self.color, self.value)
+    }
+}
 
 impl Card {
     pub fn temp(&self) -> Temp {
@@ -110,6 +115,13 @@ impl Deck {
 
     pub fn shuffle(&mut self) {
         self.0.shuffle(&mut thread_rng());
+    }
+    pub fn to_string(&self) -> String {
+        let mut string = String::new();
+        for card in self.iter() {
+            string += &format!("{} ", card);
+        }
+        string
     }
 }
 

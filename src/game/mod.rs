@@ -224,6 +224,16 @@ impl Game {
         Ok(Game { players, table })
     }
 
+    pub fn print_state(&self, player: usize) {
+        println!("{}", "-".repeat(20));
+        println!("Player {}'s hand: ", player);
+        self.players[player].print_hand();
+        println!("{}", "-".repeat(20));
+        println!("Table state!");
+        self.table.print_decks();
+        println!("{}", "-".repeat(20));
+    }
+
     // Private functions
     // Game::new() helper functions
     fn generate_players(num_players: usize) -> Result<Vec<Player>, String> {
