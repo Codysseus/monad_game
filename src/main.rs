@@ -5,6 +5,8 @@ mod game;
 fn main() {
     println!("Hello and welcome to the game of monad!");
     print!("Choose the number of players: ");
+    stdout().flush();
+
     let num_players = game::read_uint_from_user();
     let mut game = match game::Game::new(num_players){
         Ok(g) => g,
@@ -17,10 +19,12 @@ fn main() {
     for player in (0..num_players).into_iter().cycle() {
         let mut can_play = true;
         println!("It is now player {}'s turn!", player);
+
         loop {
             println!("Do you want to 0: Print State, 1: Draw, 2: Flip, 3: Trade, 4: Buy, or 5: Leap?");
             print!("> ");
             stdout().flush();
+
             match game::read_uint_from_user() {
                 0 => game.print_state(player),
                 1 => {

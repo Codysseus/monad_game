@@ -230,7 +230,6 @@ impl Game {
         let mut table = Table::new(num_players);
         let mut players = Game::generate_players(num_players)?;
 
-        table.print_decks();
         for player in &mut players {
             player.hand.extend(table.common.drain(0..6));
         }
