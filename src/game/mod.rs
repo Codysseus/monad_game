@@ -75,12 +75,20 @@ impl Game {
 
         if num_commons != commons.len() {
             for i in 0..num_commons {
+                println!("Here are all the commons to select. The first {} cards on the left will be traded in.", num_commons);
+                let card_refs = player.indexes_to_cards(&commons);
+                for i in 0..card_refs.len() {
+                    print!("{}: {}  ", i, card_refs[i]);
+                }
+                println!("");
+                println!("Enter {} to exit leap.", commons.len());
+
                 loop {
                     let card_num = read_uint_from_user();
-                    if card_num == 0 {
+                    if card_num == commons.len() {
                         return Err(String::from("You decided not to leap!"));
                     }
-                    if card_num <= commons.len() {
+                    if card_num < commons.len() {
                         commons.swap(card_num, i);
                         break;
                     }
@@ -108,6 +116,7 @@ impl Game {
         let mut cards: Vec<usize> = Vec::new();
         loop {
             println!("Enter the number of a card you want to use.");
+
             match player.select_card_in_hand() {
                 Ok(card)     => cards.push(card),
                 Err(message) => {
