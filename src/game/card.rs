@@ -106,7 +106,22 @@ impl Card {
 }
 
 #[derive(Default)]
-pub struct Deck(Vec<Card>);
+pub struct Deck(pub Vec<Card>);
+
+impl fmt::Display for Deck {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let stout = io::stdout();
+        let mut out = stout.lock();
+        self
+            .iter()
+            .enumerate()
+            .map(|(i, card)| write!(out, "{}: {} ", i, card))
+            .collect::<io::Result<()>>()
+            .unwrap();
+        std::mem::drop(out);
+        Ok(())
+    }
+}
 
 impl Deck {
     pub fn multiple(multiple: usize) -> Self {
