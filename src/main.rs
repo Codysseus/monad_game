@@ -21,7 +21,7 @@ fn main() {
         println!("It is now player {}'s turn!", player);
 
         loop {
-            println!("Do you want to 0: Print State, 1: Draw, 2: Flip, 3: Trade, 4: Buy, or 5: Leap?");
+            println!("Do you want to 0: Print State, 1: Draw, 2: Flip, 3: Trade, 4: Buy, 5: Leap, 6: End Turn?");
             print!("> ");
             stdout().flush();
 
@@ -70,6 +70,9 @@ fn main() {
                     else {
                         can_play = false;
                     }
+                },
+                6 => {
+                    break;
                 },
                 _ => println!("That's not a valid selection!"),
             }

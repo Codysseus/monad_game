@@ -32,7 +32,7 @@ impl Player {
         if card1.value == card2.value {
             return Ok(card1.value);
         }
-        
+
         if self.matches_color(card1) {
             return Ok(card2.value);
         }
@@ -48,10 +48,10 @@ impl Player {
         use self::Color::*;
         match (self.hand[card1].color, self.hand[card2].color) {
             (Orange, Blue  ) |
-            (Blue,   Orange) | 
-            (Red,    Purple) | 
-            (Purple, Red   ) | 
-            (Yellow, Green ) | 
+            (Blue,   Orange) |
+            (Red,    Purple) |
+            (Purple, Red   ) |
+            (Yellow, Green ) |
             (Green,  Yellow) => true,
             _                => false,
         }
@@ -59,7 +59,10 @@ impl Player {
 
     pub fn select_card_in_hand(&self) -> Result<usize, String> {
         loop {
-            self.print_hand();
+            player.print_hand();
+            print!("> ");
+            stdout().flush();
+
             let n = read_uint_from_user();
             if n == self.hand.len() {
                 break Err(String::from("Exiting hand selection."));
@@ -71,12 +74,7 @@ impl Player {
         }
     }
     pub fn print_hand(&self) {
-        let decks_string: String = self.hand
-                                       .iter()
-                                       .enumerate()
-                                       .map(|(i, card)| format!("{}: {} ", i, card))
-                                       .collect();
-        println!("{}", decks_string);
+        println!("{}", self.hand);
     }
 
     pub fn draw_card(&mut self, value: Value, table: &mut Table) -> Option<&Card> {

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use rand::{seq::SliceRandom, thread_rng};
-use std::io::{Write, stdout};
+use std::{io, io::Write, io::stdout};
 
 pub mod card;
 pub mod table;
@@ -127,11 +127,7 @@ impl Game {
         let player = &mut self.players[player];
         let mut cards: Vec<usize> = Vec::new();
         loop {
-            player.print_hand();
-            println!("Enter the number of a card you want to use.");
-            print!("> ");
-            stdout().flush();
-
+            println!("Select a card you want to use to buy!");
             match player.select_card_in_hand() {
                 Ok(card)     => cards.push(card),
                 Err(message) => {

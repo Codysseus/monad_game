@@ -55,6 +55,7 @@ impl Table {
         loop {
             println!("0: Common, 1: Bi, 2: Tri, 3: Quad, 4: Quint, 5: Monad, 6: Exit");
             print!("> ");
+            stdout().flush();
             let value = match read_uint_from_user() {
                 0 => Common,
                 1 => Bi,
