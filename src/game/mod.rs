@@ -79,11 +79,14 @@ impl Game {
                 println!("Here are all the commons to select. The first {} cards on the left will be traded in.", num_commons);
                 println!("Enter the number of the card to move it left.");
                 println!("Enter {} to accept selection.", commons.len());
-                let card_refs = player.indexes_to_cards(&commons);
-                for i in 0..card_refs.len() {
-                    print!("{}: {}  ", i, card_refs[i]);
-                }
+                let string: String = player.indexes_to_cards(&commons)
+                                           .iter()
+                                           .enumerate()
+                                           .map(|(i, card)| format!("{}: {} ", i, card))
+                                           .collect();
+                println!("{}", string);
                 print!("\n> ");
+                stdout().flush();
 
                 let card_num = read_uint_from_user();
                 if card_num == commons.len() {
@@ -125,6 +128,8 @@ impl Game {
         loop {
             player.print_hand();
             println!("Enter the number of a card you want to use.");
+            print!("> ");
+            stdout().flush();
 
             match player.select_card_in_hand() {
                 Ok(card)     => cards.push(card),

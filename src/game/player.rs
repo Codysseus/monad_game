@@ -59,6 +59,7 @@ impl Player {
 
     pub fn select_card_in_hand(&self) -> Result<usize, String> {
         loop {
+            self.print_hand();
             let n = read_uint_from_user();
             if n == 0 {
                 break Err(String::from("Exiting hand selection."));
@@ -70,10 +71,12 @@ impl Player {
         }
     }
     pub fn print_hand(&self) {
-        for card in self.hand.iter() {
-            print!("{}, ", card);
-        }
-        println!("");
+        let decks_string: String = self.hand
+                                       .iter()
+                                       .enumerate()
+                                       .map(|(i, card)| format!("{}: {} ", i, card))
+                                       .collect();
+        println!("{}", decks_string);
     }
 
     pub fn draw_card(&mut self, value: Value, table: &mut Table) -> Option<&Card> {
