@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use rand::{seq::SliceRandom, thread_rng};
+use std::io::{Write, stdout};
 
 pub mod card;
 pub mod table;
@@ -82,7 +83,7 @@ impl Game {
                 for i in 0..card_refs.len() {
                     print!("{}: {}  ", i, card_refs[i]);
                 }
-                println!("");
+                print!("\n> ");
 
                 let card_num = read_uint_from_user();
                 if card_num == commons.len() {
@@ -281,6 +282,9 @@ impl Game {
     fn select_commons_leap(commons: & Vec<usize>) -> Result<usize, String> {
         loop {
             println!("Enter how many commons you want to trade! (3 -> Quit; 4 -> Tri; 5 -> Quad; 6 -> Quint)");
+            print!("> ");
+            stdout().flush();
+
             let x = read_uint_from_user();
             if x == 3 {
                 break Err(String::from("You have decided not to leap! Exiting..."));
