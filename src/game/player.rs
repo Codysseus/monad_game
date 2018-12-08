@@ -88,8 +88,8 @@ impl Player {
         }
     }
 
-    pub fn indexes_to_cards(&self, cards: &Vec<usize>) -> Vec<&Card> {
-        cards.iter().map(|x| &self.hand[*x]).collect::<Vec<_>>()
+    pub fn indexes_to_cards(&self, cards: &Vec<usize>) -> Vec<Card> {
+        cards.iter().map(|x| self.hand[*x].clone()).collect::<Vec<_>>()
     }
 
     pub fn draw_monad(&mut self, table: &mut Table) -> Option<()> {

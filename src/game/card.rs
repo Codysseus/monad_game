@@ -1,5 +1,7 @@
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
+    io,
+    io::{stdout, Write},
     fmt,
     ops::{Deref, DerefMut},
 };
@@ -77,6 +79,7 @@ impl Value {
     }
 }
 
+#[derive(Clone)]
 pub struct Card {
     pub value: Value,
     pub color: Color,

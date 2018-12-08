@@ -51,6 +51,7 @@ impl Game {
         Err(String::from("You can't draw, there are no commons left!"))
     }
     pub fn leap(&mut self, player: usize) -> Result<(), String> {
+        use self::card::Deck;
         let player = &mut self.players[player];
         let mut commons: Vec<usize> = Vec::new();
         let mut num_commons: usize;
@@ -79,12 +80,12 @@ impl Game {
                 println!("Here are all the commons to select. The first {} cards on the left will be traded in.", num_commons);
                 println!("Enter the number of the card to move it left.");
                 println!("Enter {} to accept selection.", commons.len());
-                let string: String = player.indexes_to_cards(&commons)
-                                           .iter()
-                                           .enumerate()
-                                           .map(|(i, card)| format!("{}: {} ", i, card))
-                                           .collect();
-                println!("{}", string);
+
+                let mut translated_decks: Deck = Deck::default();
+                translated_decks.0 = player.indexes_to_cards(&commons);
+                println!("{}", translated_decks);
+
+
                 print!("\n> ");
                 stdout().flush();
 
