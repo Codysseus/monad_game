@@ -177,7 +177,8 @@ impl Game {
                 player.draw_monad(&mut self.table);
             }
 
-            for i in cards {
+            cards.sort();
+            for i in cards.iter().rev() {
                 self.table.return_card(player.hand.remove(i));
             }
 
