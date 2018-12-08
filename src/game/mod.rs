@@ -85,18 +85,20 @@ impl Game {
                 println!("");
 
                 let card_num = read_uint_from_user();
-                if card_num == 0 {
-                    continue;
-                }
                 if card_num == commons.len() {
-                    return Err(String::from("You decided not to leap!"));
-                }
-                if card_num < commons.len() {
-                    let index = card_num - 1;
-                    commons.swap(card_num, index);
+                    println!("Exiting card selection.");
                     break;
                 }
-                println!("Not a valid selection! Please try again.");
+                if card_num < commons.len() {
+                    let index = match card_num {
+                        0 => 0,
+                        n => n-1,
+                    };
+                    commons.swap(card_num, index);
+                }
+                else {
+                    println!("Not a valid selection! Please try again.");
+                }
             }
             commons.split_off(num_commons);
         }
@@ -105,10 +107,12 @@ impl Game {
             Game::translate_commons_for_leap(num_commons)
         ).unwrap();
 
-        for elt in commons {
-            self.table.return_card(player.hand.remove(elt));
+        commons.sort();
+        for elt in commons.iter().rev() {
+            self.table.return_card(player.hand.remove(*elt));
         }
 
+        println!("Leapt forward with a {}", card);
         player.hand.push(card);
 
         Ok(())
@@ -262,8 +266,8 @@ impl Game {
                 colors.drain(0..3);
             },
             4 => {
+                colors.remove(5);
                 colors.remove(2);
-                colors.remove(4);
             },
             _ => return Err(String::from("There should only be 2-4 players!")),
         }
