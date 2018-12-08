@@ -61,10 +61,10 @@ impl Player {
         loop {
             self.print_hand();
             let n = read_uint_from_user();
-            if n == 0 {
+            if n == self.hand.len() {
                 break Err(String::from("Exiting hand selection."));
             }
-            if n <= self.hand.len() {
+            if n < self.hand.len() {
                 break Ok(n);
             }
             println!("{} is an invalid selection! Please try again.", n);
