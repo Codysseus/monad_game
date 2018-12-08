@@ -53,14 +53,16 @@ impl Table {
     pub fn select_deck_value(&self) -> Result<Option<self::card::Value>, String> {
         use self::card::Value::*;
         loop {
+            println!("0: Common, 1: Bi, 2: Tri, 3: Quad, 4: Quint, 5: Monad, 6: Exit");
+            print!("> ");
             let value = match read_uint_from_user() {
-                0 => break Err(String::from("Exiting deck selection.")),
-                1 => Common,
-                2 => Bi,
-                3 => Tri,
-                4 => Quad,
-                5 => Quint,
-                6 => break Ok(None),
+                0 => Common,
+                1 => Bi,
+                2 => Tri,
+                3 => Quad,
+                4 => Quint,
+                5 => break Ok(None),
+                6 => break Err(String::from("Exiting deck selection.")),
                 n => {
                     println!("{} is an invalid selection! Please try again.", n);
                     continue;
