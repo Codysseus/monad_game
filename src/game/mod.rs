@@ -169,14 +169,16 @@ impl Game {
             }
 
             if let Some(value) = choice {
-                player.draw_card(value, &mut self.table);
+                let drawn_card = player.draw_card(value, &mut self.table);
+                println!("Player bought a  {}", drawn_card);
             } else {
                 player.draw_monad(&mut self.table);
+                println!("Player bought a monad!");
             }
 
             cards.sort();
             for i in cards.iter().rev() {
-                self.table.return_card(player.hand.remove(i));
+                self.table.return_card(player.hand.remove(*i));
             }
 
             break Ok(());

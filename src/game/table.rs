@@ -1,6 +1,7 @@
 use super::read_uint_from_user;
 use super::card::{self, Monad, Card, Deck};
 use std::iter::repeat_with;
+use std::io::{stdout, Write};
 
 pub struct Table {
     pub discard: Deck,
