@@ -45,9 +45,9 @@ impl Player {
         Err(String::from("Cards should have the same value when trading! Or if they don't, one should at least be your identity color!"))
     }
 
-    pub fn is_bonus_pair(&self, card1: usize, card2: usize) -> bool {
+    pub fn can_take_bonus(&self, card1: usize, card2: usize) -> bool {
         use self::Color::*;
-        match (self.hand[card1].color, self.hand[card2].color) {
+        let bonus_match = match (self.hand[card1].color, self.hand[card2].color) {
             (Orange, Blue  ) |
             (Blue,   Orange) |
             (Red,    Purple) |
@@ -56,6 +56,9 @@ impl Player {
             (Green,  Yellow) => true,
             _                => false,
         }
+        // Not only do the colors need to match a bonus pair, but you can't use a wild to get a
+        // bonus.
+        bonus_match && self.hand[card1].value == self.hand[card2].value
     }
 
     pub fn select_card_in_hand(&self) -> Result<usize, String> {

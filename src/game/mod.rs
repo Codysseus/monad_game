@@ -217,16 +217,19 @@ impl Game {
             break (card1, card2, value);
         };
 
-        if player.is_bonus_pair(card1, card2) {
+        if player.can_take_bonus(card1, card2) {
             println!("Woah! You picked a bonus pair!");
-            let mut maybe_curr_value = value.prev();
+            println!("Do you want to take a bonus? 0: No, 1: Yes");
+            if read_uint_from_user() == 1 {
+                let mut maybe_curr_value = value.prev();
 
-            while let Some(curr_value) = maybe_curr_value {
-                player
-                    .draw_card(curr_value, &mut self.table)
-                    .map(|card| println!("Drew a {} {} card!", card.color, card.value));
+                while let Some(curr_value) = maybe_curr_value {
+                    player
+                        .draw_card(curr_value, &mut self.table)
+                        .map(|card| println!("Drew a {}!", card));
 
-                maybe_curr_value = curr_value.prev();
+                    maybe_curr_value = curr_value.prev();
+                }
             }
         }
 
