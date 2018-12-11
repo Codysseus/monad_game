@@ -240,8 +240,11 @@ impl Game {
             }
         }
 
-        self.table.return_card(player.hand.remove(card1));
-        self.table.return_card(player.hand.remove(card2));
+        let mut selected_cards = [card1, card2];
+        selected_cards.sort();
+        for card in selected_cards.iter().rev() {
+            self.table.return_card(player.hand.remove(*card));
+        }
 
         Ok(())
     }
