@@ -3,7 +3,7 @@ use super::{
     table::Table,
     read_uint_from_user,
 };
-use std::io::{self, stdout, Write};
+use std::io::{stdout, Write};
 
 pub struct Player {
     pub hand: Deck,
@@ -67,7 +67,7 @@ impl Player {
         loop {
             self.print_hand();
             print!("> ");
-            io::stdout().flush();
+            stdout().flush();
 
             let n = read_uint_from_user();
             if n == self.hand.len() {
