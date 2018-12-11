@@ -230,6 +230,7 @@ impl Game {
 
                     maybe_curr_value = curr_value.prev();
                 }
+                player.took_bonus = true;
             }
         }
 
@@ -237,6 +238,10 @@ impl Game {
         self.table.return_card(player.hand.remove(card2));
 
         Ok(())
+    }
+
+    pub fn init_turn(&mut self, player: usize) {
+        self.players[player].took_bonus = false;
     }
 
     pub fn new(num_players: usize) -> Result<Self, String> {

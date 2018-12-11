@@ -19,6 +19,7 @@ fn main() {
     for player in (0..num_players).into_iter().cycle() {
         let mut can_play = true;
         println!("It is now player {}'s turn!", player);
+        game.init_turn(player);
 
         loop {
             println!("Do you want to 0: Print State, 1: Draw, 2: Flip, 3: Trade, 4: Buy, 5: Leap, 6: End Turn?");

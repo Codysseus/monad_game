@@ -8,14 +8,16 @@ use std::io::{self, stdout, Write};
 pub struct Player {
     pub hand: Deck,
     pub identity: Color,
+    pub took_bonus: bool,
     pub monads: Vec<Monad>,
 }
 
 impl From<card::Color> for Player {
     fn from(color: Color) -> Self {
         Player {
-            identity: color,
             hand: Deck::default(),
+            identity: color,
+            took_bonus: false,
             monads: Vec::new(),
         }
     }
@@ -58,7 +60,7 @@ impl Player {
         };
         // Not only do the colors need to match a bonus pair, but you can't use a wild to get a
         // bonus.
-        bonus_match && self.hand[card1].value == self.hand[card2].value
+        bonus_match && self.hand[card1].value == self.hand[card2].value && ! self.took_bonus
     }
 
     pub fn select_card_in_hand(&self) -> Result<usize, String> {
