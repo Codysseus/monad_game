@@ -111,15 +111,12 @@ pub struct Deck(pub Vec<Card>);
 
 impl fmt::Display for Deck {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let stout = io::stdout();
-        let mut out = stout.lock();
         self
             .iter()
             .enumerate()
-            .map(|(i, card)| write!(out, "{}: {} ", i, card))
-            .collect::<io::Result<()>>()
+            .map(|(i, card)| write!(fmt, "{}: {} ", i, card))
+            .collect::<fmt::Result>()
             .unwrap();
-        std::mem::drop(out);
         Ok(())
     }
 }
