@@ -211,10 +211,12 @@ impl Game {
                     println!("You can't draw any more {} cards! Please choose different cards!", v);
                     continue;
                 }
+                println!("Player traded for a {}!", player.hand.last().unwrap());
             } else {
                 player
                     .draw_monad(&mut self.table)
                     .expect("Woah! We ran out of Monads! This isn't supposed to happen!");
+                println!("Player traded for a monad!");
             }
 
             break (card1, card2, value);
