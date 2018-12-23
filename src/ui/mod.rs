@@ -46,16 +46,27 @@ pub fn play(game: &mut Game, num_players: usize, mut input: impl Read, mut outpu
                         Err(message) => { write!(output, "{}\n", message); continue; },
                     };
                     if monad_drawn {
-                        write!(output, "Player drew a monad!\n");
+                        write!(output, "Player traded for a monad!\n");
                     }
-                    write!(output, "You drew {} card(s)!\n", cards);
+                    write!(output, "You traded for {} card(s)!\n", cards);
                     can_play = false;
                 },
                 4 => {
-                    if let Err(message) = game.buy(player) {
-                        write!(output, "{}\n", message);
+                    let (mut cards, deck_value) = match pick_buy(&mut output, game, player) {
+                        Ok(result)   => result,
+                        Err(message) => { write!(output, "{}\n", message); continue; },
+                    };
+                    let drew_card = match game.buy(player, &mut cards, deck_value) {
+                        Ok(result)   => result,
+                        Err(message) => { write!(output, "{}\n", message); continue; }
+                    };
+                    if drew_card {
+                        write!(output, "Player bought a card!\n");
                     }
-                    else { can_play = false; }
+                    else {
+                        write!(output, "Player bought a monad!\n");
+                    }
+                    can_play = false;
                 },
                 5 => {
                     if let Err(message) = game.leap(player) {
@@ -85,6 +96,30 @@ fn pick_trade(output: &mut impl Write, game: &mut Game, player: usize) -> Result
     Ok((card1, card2, bonus))
 }
 
+fn pick_buy(output: &mut impl Write, game: &mut Game, player: usize) -> Result<(Vec<usize>, Option<Value>), String> {
+    let player = &mut game.players[player];
+    let mut cards: Vec<usize> = Vec::new();
+    loop {
+        write!(output, "Select a card you want to use to buy! Enter {} to exit selection.\n", player.hand.len());
+        output.flush();
+
+        match select_card_hand(output, player) {
+            Ok(card)     => cards.push(card),
+            Err(message) => {
+                if cards.is_empty() {
+                    return Err(String::from("No cards selected! Exiting buying mode."));
+                }
+                write!(output, "{} Let's see if you can buy anything with this!\n", message);
+                output.flush();
+                break;
+            },
+        };
+    }
+    cards.dedup();
+    let deck_value = select_deck_value(output)?;
+    Ok((cards, deck_value))
+}
+
 fn select_card_hand(output: &mut impl Write, player: &Player) -> Result<usize, String> {
     loop {
         write!(output, "{}\n", player.hand);
@@ -99,6 +134,33 @@ fn select_card_hand(output: &mut impl Write, player: &Player) -> Result<usize, S
             break Err(String::from("Exiting hand selection.."));
         }
         break Ok(card);
+    }
+}
+
+fn select_deck_value(output: &mut impl Write) -> Result<Option<Value>, String> {
+    use game::card::Value::*;
+    write!(output, "Please select a deck to buy from!\n");
+    loop {
+        write!(output, "0: Common, 1: Bi, 2: Tri, 3: Quad, 4: Quint, 5: Monad, 6: Exit\n");
+        write!(output, "> ");
+        output.flush();
+
+        let value = match read_uint_from_user() {
+            0 => Some(Common),
+            1 => Some(Bi),
+            2 => Some(Tri),
+            3 => Some(Quad),
+            4 => Some(Quint),
+            5 => None,
+            6 => {
+                break Err(String::from("Exiting deck selection..."));
+            }
+            n => {
+                write!(output, "{} is an invalid selection! Please try again.", n);
+                continue;
+            }
+        };
+        break Ok(value);
     }
 }
 

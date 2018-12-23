@@ -123,27 +123,9 @@ impl Game {
         Ok(())
     }
 
-    pub fn buy(&mut self, player: usize) -> Result<(), String>{
+    pub fn buy(&mut self, player: usize, cards: &mut Vec<usize>, deck_value: Option<Value>) -> Result<bool, String>{
         let player = &mut self.players[player];
-        let mut cards: Vec<usize> = Vec::new();
-        loop {
-            println!("Select a card you want to use to buy!");
-            print!("> ");
-            stdout().flush();
-
-            match player.select_card_in_hand() {
-                Ok(card)     => cards.push(card),
-                Err(message) => {
-                    if cards.is_empty() {
-                        return Err(String::from("No cards selected! Exiting buying mode."));
-                    }
-                    println!("{} Let's see if you can buy anything with this!", message);
-                    break;
-                },
-            };
-        }
-        cards.dedup();
-
+        let mut drew_card = true;
         let nums = cards
             .iter()
             .map(|p| &player.hand[*p])
@@ -153,39 +135,33 @@ impl Game {
         let buy_value = nums.iter().sum::<usize>();
         let max_value = nums.into_iter().max().unwrap_or(0);
 
-        loop {
-            println!("Pick the deck you want to buy from!");
-            let choice = self.table.select_deck_value()?;
+        let cost = deck_value
+            .as_ref()
+            .map(Value::num)
+            .unwrap_or(80);
 
-            let cost = choice
-                .as_ref()
-                .map(Value::num)
-                .unwrap_or(80);
-
-            if max_value >= cost {
-                println!("Can't buy something of the same value!");
-                continue;
-            }
-            if buy_value < cost {
-                println!("Not enough points!");
-                continue;
-            }
-
-            if let Some(value) = choice {
-                let drawn_card = player.draw_card(value, &mut self.table).unwrap();
-                println!("Player bought a  {}", drawn_card);
-            } else {
-                player.draw_monad(&mut self.table);
-                println!("Player bought a monad!");
-            }
-
-            cards.sort();
-            for i in cards.iter().rev() {
-                self.table.return_card(player.hand.remove(*i));
-            }
-
-            break Ok(());
+        if max_value >= cost {
+            return Err(String::from("Can't buy something of the same value!"));
         }
+        if buy_value < cost {
+            return Err(String::from("Not enough points!"));
+        }
+
+        if let Some(value) = deck_value {
+            if player.draw_card(value, &mut self.table).is_none() {
+                return Err(format!("The {} deck is out of cards!", value));
+            }
+        } else {
+            player.draw_monad(&mut self.table);
+            drew_card = false;
+        }
+
+        cards.sort();
+        for i in cards.iter().rev() {
+            self.table.return_card(player.hand.remove(*i));
+        }
+
+        Ok(drew_card)
     }
 
     pub fn trade(&mut self, player: usize, card1: usize, card2: usize, bonus: bool) -> Result<(usize, bool), String> {
