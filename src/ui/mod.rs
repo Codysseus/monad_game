@@ -37,9 +37,19 @@ pub fn play(game: &mut Game, num_players: usize, mut input: impl Read, mut outpu
                     write!(output, "You already did something else this turn! You can't flip!\n");
                 },
                 3 => {
-                    let result = trade(&mut output, game, player);
-                    can_play = result.is_err();
-                    write!(output, "{}\n", extract_value(result));
+                    let (card1, card2, bonus) = match pick_trade(&mut output, game, player) {
+                        Ok(result) => result,
+                        Err(message) => { write!(output, "{}\n", message); continue; },
+                    };
+                    let (cards, monad_drawn) = match game.trade(player, card1, card2, bonus) {
+                        Ok(result) => result,
+                        Err(message) => { write!(output, "{}\n", message); continue; },
+                    };
+                    if monad_drawn {
+                        write!(output, "Player drew a monad!\n");
+                    }
+                    write!(output, "You drew {} card(s)!\n", cards);
+                    can_play = false;
                 },
                 4 => {
                     if let Err(message) = game.buy(player) {
@@ -64,26 +74,15 @@ pub fn play(game: &mut Game, num_players: usize, mut input: impl Read, mut outpu
     }
 }
 
-fn trade(output: &mut impl Write, game: &mut Game, player: usize) -> Result<String, String> {
-    let mut card1: usize;
-    let mut card2: usize;
-    let mut value: Value;
-    let mut bonus = false;
-    {
-        let pobj = &game.players[player];
-        write!(output, "Please select the first card to trade!\n");
-        card1 = select_card_hand(output, &pobj)?;
-        write!(output, "Please select the second card to trade!\n");
-        card2 = select_card_hand(output, &pobj)?;
-
-        value = pobj.trade_value(card1, card2)?;
-
-        if pobj.can_take_bonus(card1, card2) {
-            write!(output, "Woah! You can take a bonus! Do you want to? (0: no, 1: yes)\n");
-            bonus = read_uint_from_user() == 1;
-        }
-    }
-    game.trade(player, card1, card2, value, bonus)
+fn pick_trade(output: &mut impl Write, game: &mut Game, player: usize) -> Result<(usize, usize, bool), String> {
+    let pobj = &game.players[player];
+    write!(output, "Please select the first card to trade!\n");
+    let card1 = select_card_hand(output, &pobj)?;
+    write!(output, "Please select the second card to trade!\n");
+    let card2 = select_card_hand(output, &pobj)?;
+    write!(output, "If these cards are a bonus, will you take it? (0: no, 1: yes)\n");
+    let bonus = read_uint_from_user() == 1;
+    Ok((card1, card2, bonus))
 }
 
 fn select_card_hand(output: &mut impl Write, player: &Player) -> Result<usize, String> {

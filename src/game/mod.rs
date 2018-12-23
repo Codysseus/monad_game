@@ -188,26 +188,29 @@ impl Game {
         }
     }
 
-    pub fn trade(&mut self, player: usize, card1: usize, card2: usize, value: Value, bonus: bool) -> Result<String, String> {
-        let mut return_message: String = String::new();
+    pub fn trade(&mut self, player: usize, card1: usize, card2: usize, bonus: bool) -> Result<(usize, bool), String> {
+        let mut num_cards = 0;
+        let mut drew_monad = false;
+
         let player = &mut self.players[player];
+        let value = player.trade_value(card1, card2)?;
 
         if let Some(v) = value.succ() {
             if player.draw_card(v, &mut self.table).is_none() {
                 return Err(format!("You can't draw any more {} cards! Please choose different cards!", v));
             }
-            return_message += &format!("Player drew a {}!\n", value.succ().unwrap());
+            num_cards += 1;
         } else {
             player.draw_monad(&mut self.table)
                 .expect("Woah! We ran out of Monads! This isn't supposed to happen!");
-            return_message += &String::from("Player drew a monad!\n");
+            drew_monad = true;
         }
 
-        if bonus {
+        if bonus && player.can_take_bonus(card1, card2) {
             let mut maybe_curr_value = value.prev();
             while let Some(curr_value) = maybe_curr_value {
                 if let Some(card) = player.draw_card(curr_value, &mut self.table) {
-                    return_message += &format!("Player drew a bonus {} card!\n", card);
+                    num_cards += 1;
                 }
                 maybe_curr_value = curr_value.prev();
             }
@@ -220,7 +223,7 @@ impl Game {
             self.table.return_card(player.hand.remove(*card));
         }
 
-        Ok(return_message)
+        Ok((num_cards, drew_monad))
     }
 
     pub fn init_turn(&mut self, player: usize) {
