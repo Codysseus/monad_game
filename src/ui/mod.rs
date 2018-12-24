@@ -1,122 +1,171 @@
-use std::io::{Read, Write};
-use ::game::{Game, read_uint_from_user};
-use game::card::Value;
-use game::player::Player;
+use std::{
+    fmt,
+    io::{BufRead, Write},
+};
+use crate::{
+    game::{
+        Game,
+        player::Player,
+    }
+};
 
-pub fn play(game: &mut Game, num_players: usize, mut input: impl Read, mut output: impl Write) {
-    for player in (0..num_players).into_iter().cycle() {
-        let mut can_play = true;
-        write!(output, "It is now player {}'s turn!\n", player);
-        game.init_turn(player);
+pub struct Ui<Input, Output> {
+    pub input: Input,
+    pub output: Output,
+}
 
-        loop {
-            write!(output, "Do you want to 0: Print State, 1: Draw, 2: Flip, 3: Trade, 4: Buy, 5: Leap, 6: End Turn?\n");
-            write!(output, "> ");
-            output.flush().unwrap();
+impl<Input: BufRead, Output: Write> Ui<Input, Output> {
+    pub fn play(mut self, mut game: Game) {
+        let mut buffer = String::new();
 
-            match read_uint_from_user() {
-                0 => { game.print_state(player); },
-                1 => {
-                    if can_play {
-                        if let Err(message) = game.draw(player) {
-                            write!(output, "{}\n", message);
-                            continue;
+        for player in (0..game.players.len()).cycle() {
+            let mut action_performed = false;
+
+            writeln!(self.output, "It is now player {}'s turn!", player);
+            game.init_turn(player);
+
+            loop {
+                write!(self.output, "Actions: print draw flip trade buy leap end \n> ");
+                self.output.flush().unwrap();
+                self.input.read_line(&mut buffer).unwrap();
+
+                match buffer.trim() {
+                    "print" => self.print_state(&game, player),
+                    "draw" => {
+                        if !action_performed {
+                            self.draw(&mut game, player);
+                        } else {
+                            writeln!(self.output, "You already did something else this turn! You can't draw!");
                         }
-                        break;
-                    }
-                    write!(output, "You already did something else this turn! You can't draw!\n");
-                },
-                2 => {
-                    if can_play {
-                        if let Err(message) = game.flip() {
-                            write!(output, "{}\n", message);
-                            continue;
+                    },
+                    "flip" => {
+                        if !action_performed {
+                            self.flip(&mut game);
+                        } else {
+                            writeln!(self.output, "You already did something else this turn! You can't flip!");
                         }
-                        break;
-                    }
-                    write!(output, "You already did something else this turn! You can't flip!\n");
-                },
-                3 => {
-                    let result = trade(&mut output, game, player);
-                    can_play = result.is_err();
-                    write!(output, "{}\n", extract_value(result));
-                },
-                4 => {
-                    if let Err(message) = game.buy(player) {
-                        write!(output, "{}\n", message);
-                    }
-                    else { can_play = false; }
-                },
-                5 => {
-                    if let Err(message) = game.leap(player) {
-                        write!(output, "{}\n", message);
-                    }
-                    else {
-                        can_play = false;
-                    }
-                },
-                6 => {
-                    break;
-                },
-                _ => { write!(output, "That's not a valid selection!\n"); },
+                    },
+                    "trade" => action_performed |= self.trade(&mut game, player).is_ok(),
+                    "buy" => action_performed |= self.buy(&mut game, player).is_ok(),
+                    "leap" => action_performed |= self.leap(&mut game, player).is_ok(),
+                    "end" => break,
+                    string => { writeln!(self.output, "{}: unrecognized command", string); },
+                };
             }
         }
     }
-}
 
-fn trade(output: &mut impl Write, game: &mut Game, player: usize) -> Result<String, String> {
-    let mut card1: usize;
-    let mut card2: usize;
-    let mut value: Value;
-    let mut bonus = false;
-    {
-        let pobj = &game.players[player];
-        write!(output, "Please select the first card to trade!\n");
-        card1 = select_card_hand(output, &pobj)?;
-        write!(output, "Please select the second card to trade!\n");
-        card2 = select_card_hand(output, &pobj)?;
-
-        value = pobj.trade_value(card1, card2)?;
-
-        if pobj.can_take_bonus(card1, card2) {
-            write!(output, "Woah! You can take a bonus! Do you want to? (0: no, 1: yes)\n");
-            bonus = read_uint_from_user() == 1;
+    fn draw(&mut self, game: &mut Game, player: usize) {
+        if game.draw(player).is_err() {
+            writeln!(self.output, "Unable to draw: no commons left");
         }
     }
-    game.trade(player, card1, card2, value, bonus)
-}
 
-fn select_card_hand(output: &mut impl Write, player: &Player) -> Result<usize, String> {
-    loop {
-        write!(output, "{}\n", player.hand);
-        write!(output, "> ");
-        output.flush().unwrap();
-        let card = read_uint_from_user();
-        if card > player.hand.len() {
-            write!(output, "{} is not a valid selection!\n", card);
-            continue;
+    fn flip(&mut self, game: &mut Game) {
+        if let Err(error) = game.flip() {
+            writeln!(self.output, "Unable to flip: {}", error);
         }
-        if card == player.hand.len() {
-            break Err(String::from("Exiting hand selection.."));
+    }
+
+    fn trade(&mut self, game: &mut Game, player: usize) -> Result<(), ()> {
+        let player_ref = &game.players[player];
+        write!(self.output, "Please select the first card to trade!\n");
+        let card1 = self.select_card_hand(player_ref)?;
+        write!(self.output, "Please select the second card to trade!\n");
+        let card2 = self.select_card_hand(player_ref)?;
+
+        let value = player_ref
+            .trade_value(card1, card2)
+            .map_err(|message| { writeln!(self.output, "{}", message); })?;
+
+        let bonus =
+            if player_ref.can_take_bonus(card1, card2) {
+                self.prompt_bool("Woah! You can take a bonus! Do you want to?")
+            } else {
+                false
+            };
+
+        game
+            .trade(player, card1, card2, value, bonus)
+            .map    (|message| { writeln!(self.output, "{}", message); })
+            .map_err(|message| { writeln!(self.output, "{}", message); })
+    }
+
+    fn buy(&mut self, game: &mut Game, player: usize) -> Result<(), ()> {
+        game
+            .buy(player)
+            .map_err(|message| { writeln!(self.output, "{}", message); })
+    }
+
+    fn leap(&mut self, game: &mut Game, player: usize) -> Result<(), ()> {
+        game
+            .leap(player)
+            .map_err(|message| { writeln!(self.output, "{}", message); })
+    }
+
+    fn select_card_hand(&mut self, player: &Player) -> Result<usize, ()> {
+        loop {
+            write!(self.output, "{}\n> ", player.hand);
+            self.output.flush().unwrap();
+            let card = self.prompt_usize();
+
+            if card > player.hand.len() {
+                write!(self.output, "{} is not a valid selection!\n", card);
+                continue;
+            }
+            if card == player.hand.len() {
+                writeln!(self.output, "Exiting hand selection.");
+                break Err(());
+            }
+            break Ok(card);
         }
-        break Ok(card);
     }
-}
 
-fn extract_value(res: Result<String, String>) -> String {
-    match res {
-        Ok(msg)  => msg,
-        Err(msg) => msg,
+    pub fn print_state(&mut self, game: &Game, player: usize) {
+        const SEPARATOR: &str = "--------------------";
+        let player = game.players[player];
+
+        write!(
+            self.output,
+"{separator}
+Color: {color}
+Hand: {hand},
+{separator}
+Table: {table}
+{separator}
+",
+            separator = SEPARATOR,
+            color = player.identity,
+            hand = player.hand,
+            table = game.table,
+        );
     }
-}
 
-pub fn print_state(game: &Game, player: usize) {
-    println!("{}", "-".repeat(20));
-    println!("Player color: {}", game.players[player].identity);
-    println!("Player {}'s hand: ", player);
-    game.players[player].print_hand();
-    println!("{}", "-".repeat(20));
-    println!("Table state!");
-    game.table.print_decks();
-    println!("{}", "-".repeat(20));
+    pub fn prompt_usize(&mut self) -> usize {
+        let mut buffer = String::new();
+        loop {
+            self.input.read_line(&mut buffer).expect("Problem reading input from user!");
+            if let Ok(r) = buffer.trim().parse::<usize>() {
+                break r;
+            }
+            write!(self.output, "What you entered is not an unsigned integer! Please try again.\n");
+        }
+    }
+
+    pub fn prompt_bool(&mut self, message: impl fmt::Display) -> bool {
+        let mut buffer = String::new();
+        loop {
+            write!(self.output, "{} (yes/no) > ", message);
+            self.input.read_line(&mut buffer).unwrap();
+
+            break match buffer.trim() {
+                "yes" => true,
+                "no" => false,
+                _ => {
+                    write!(self.output, "Please enter 'yes' or 'no' > ");
+                    continue;
+                }
+            };
+        }
+    }
 }

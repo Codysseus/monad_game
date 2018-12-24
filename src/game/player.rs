@@ -1,7 +1,6 @@
 use super::{
     card::{self, Monad, Deck, Card, Color, Value},
     table::Table,
-    read_uint_from_user,
 };
 use std::io::{stdout, Write};
 
@@ -69,7 +68,7 @@ impl Player {
             print!("> ");
             stdout().flush();
 
-            let n = read_uint_from_user();
+            let n = read_usize_from_user();
             if n == self.hand.len() {
                 break Err(String::from("Exiting hand selection."));
             }
@@ -78,9 +77,6 @@ impl Player {
             }
             println!("{} is an invalid selection! Please try again.", n);
         }
-    }
-    pub fn print_hand(&self) {
-        println!("{}", self.hand);
     }
 
     pub fn draw_card(&mut self, value: Value, table: &mut Table) -> Option<&Card> {

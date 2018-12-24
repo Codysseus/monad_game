@@ -1,7 +1,9 @@
-use super::read_uint_from_user;
 use super::card::{self, Monad, Card, Deck};
-use std::iter::repeat_with;
-use std::io::{stdout, Write};
+use std::{
+    fmt,
+    iter::repeat_with,
+    io::{stdout, Write},
+};
 
 pub struct Table {
     pub discard: Deck,
@@ -42,30 +44,17 @@ impl Table {
         table
     }
 
-    pub fn print_decks(&self) {
-        println!("Common:\t{}",  self.common.len());
-        println!("Discard:\t{}", self.discard.to_string());
-        println!("Bi:\t{}",      self.bi.to_string());
-        println!("Tri:\t{}",     self.tri.to_string());
-        println!("Quad:\t{}",    self.quad.to_string());
-        println!("Quint:\t{}",   self.quint.to_string());
-    }
-
     pub fn select_deck_value(&self) -> Result<Option<self::card::Value>, String> {
-        use self::card::Value::*;
+        use self::card::Value;
         loop {
-            println!("0: Common, 1: Bi, 2: Tri, 3: Quad, 4: Quint, 5: Monad, 6: Exit");
+            println!("1-5: Cards, 6: Monad, 0: Exit");
             print!("> ");
             stdout().flush();
 
-            let value = match read_uint_from_user() {
-                0 => Common,
-                1 => Bi,
-                2 => Tri,
-                3 => Quad,
-                4 => Quint,
-                5 => break Ok(None),
-                6 => break Err(String::from("Exiting deck selection.")),
+            let value = match read_usize_from_user() {
+                0 => break Err(String::from("Exiting deck selection.")),
+                n @ 1..=5 => Value::try_from(n).unwrap(),
+                6 => break Ok(None),
                 n => {
                     println!("{} is an invalid selection! Please try again.", n);
                     continue;
@@ -124,3 +113,23 @@ impl Table {
     }
 }
 
+impl fmt::Display for Table {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            fmt,
+"Common:  {}
+Discard: {}
+Bi:      {}
+Tri:     {}
+Quad:    {}
+Quint:   {}
+",
+            self.common.len(),
+            self.discard,
+            self.bi,
+            self.tri,
+            self.quad,
+            self.quint,
+        )
+    }
+}

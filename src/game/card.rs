@@ -45,7 +45,20 @@ impl fmt::Display for Value {
 }
 
 impl Value {
-    pub fn succ(&self) -> Option<Value> {
+    pub fn try_from(source: usize) -> Result<Self, ()> {
+        use self::Value::*;
+        let value = match source {
+            1 => Common,
+            2 => Bi,
+            3 => Tri,
+            4 => Quad,
+            5 => Quint,
+            _ => return Err(()),
+        };
+
+        Ok(value)
+    }
+    pub fn succ(self) -> Option<Value> {
         use self::Value::*;
         match self {
             Common => Some(Bi),
@@ -65,7 +78,7 @@ impl Value {
             Quint  => Some(Quad),
         }
     }
-    pub fn num(&self) -> usize {
+    pub fn points(self) -> usize {
         use self::Value::*;
         match self {
             Common => 1,
@@ -82,6 +95,7 @@ pub struct Card {
     pub value: Value,
     pub color: Color,
 }
+
 impl fmt::Display for Card {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{}:{}", self.color, self.value)
@@ -98,7 +112,7 @@ impl Card {
     }
 
     pub fn num(&self) -> usize {
-        self.value.num()
+        self.value.points()
     }
 
     pub fn is_common(&self) -> bool {
@@ -115,9 +129,7 @@ impl fmt::Display for Deck {
             .iter()
             .enumerate()
             .map(|(i, card)| write!(fmt, "{}: {} ", i, card))
-            .collect::<fmt::Result>()
-            .unwrap();
-        Ok(())
+            .collect()
     }
 }
 
@@ -129,12 +141,11 @@ impl Deck {
     pub fn shuffle(&mut self) {
         self.0.shuffle(&mut thread_rng());
     }
-    pub fn to_string(&self) -> String {
-        let mut string = String::new();
-        for card in self.iter() {
-            string += &format!("{}\t", card);
-        }
-        string
+
+    pub fn find_all(&self, predicate: impl Fn(&Card) -> bool) -> Vec<usize> {
+        (0..self.len())
+            .filter(|&i| predicate(&self[i]))
+            .collect()
     }
 }
 

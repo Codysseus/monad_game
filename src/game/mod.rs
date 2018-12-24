@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use rand::{seq::SliceRandom, thread_rng};
-use std::io::{Write, stdout};
+use std::fmt;
 
 pub mod card;
 pub mod table;
@@ -14,14 +14,18 @@ use self::{
 
 use std::io::stdin;
 
-pub fn read_uint_from_user() -> usize {
-    let mut string = String::new();
-    loop {
-        stdin().read_line(&mut string).expect("Problem reading input from user!");
-        if let Ok(r) = string.trim().parse::<usize>() {
-            break r;
-        }
-        println!("What you entered is not an unsigned integer! Please try again.");
+pub enum FlipError {
+    EmptyDiscardPile,
+    NonEmptyCommonDeck,
+}
+
+impl fmt::Display for FlipError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use self::FlipError::*;
+        write!(fmt, "{}", match self {
+            EmptyDiscardPile => "Discard pile is empty",
+            NonEmptyCommonDeck => "Common deck still has cards",
+        })
     }
 }
 
@@ -32,35 +36,31 @@ pub struct Game {
 
 impl Game {
     // Public functions
-    pub fn flip(&mut self) -> Result<(), String> {
-        use self::card::Value::Common;
-        if self.table.discard.is_empty() {
-            return Err(String::from("The discard pile is empty!"));
-        }
-        if self.table.deck(Common).is_empty() {
-            self.table.common.append(&mut self.table.discard);
-        }
-        Err(String::from("There are still commons in the common deck!"))
+    pub fn flip(&mut self) -> Result<(), FlipError> {
+        if self.table.discard.is_empty() { return Err(FlipError::EmptyDiscardPile); }
+        if !self.table.deck(card::Value::Common).is_empty() { return Err(FlipError::NonEmptyCommonDeck); }
+
+        self.table.common.append(&mut self.table.discard);
+
+        Ok(())
     }
-    pub fn draw(&mut self, player: usize) -> Result<(), String> {
-        use self::card::Value::Common;
-        if let Some(card) = self.table.draw_top(Common) {
-            self.players[player].hand.push(card);
-            return Ok(());
+
+    pub fn draw(&mut self, player: usize) -> Result<(), ()> {
+        match self.table.draw_top(card::Value::Common) {
+            Some(card) => {
+                self.players[player].hand.push(card);
+                Ok(())
+            },
+            None => Err(()),
         }
-        Err(String::from("You can't draw, there are no commons left!"))
     }
+
     pub fn leap(&mut self, player: usize) -> Result<(), String> {
         use self::card::Deck;
         let player = &mut self.players[player];
-        let mut commons: Vec<usize> = Vec::new();
         let mut num_commons: usize;
 
-        for i in 0..player.hand.len() {
-            if player.hand[i].is_common() {
-                commons.push(i);
-            }
-        }
+        let mut commons = player.hand.find_all(Card::is_common);
 
         if commons.len() < 4 {
             return Err(String::from("Not enough commons to leap!"));
@@ -89,7 +89,7 @@ impl Game {
                 print!("\n> ");
                 stdout().flush();
 
-                let card_num = read_uint_from_user();
+                let card_num = read_usize();
                 if card_num == commons.len() {
                     println!("Exiting card selection.");
                     break;
@@ -158,8 +158,7 @@ impl Game {
             let choice = self.table.select_deck_value()?;
 
             let cost = choice
-                .as_ref()
-                .map(Value::num)
+                .map(Value::points)
                 .unwrap_or(80);
 
             if max_value >= cost {
@@ -238,17 +237,6 @@ impl Game {
         Ok(Game { players, table })
     }
 
-    pub fn print_state(&self, player: usize) {
-        println!("{}", "-".repeat(20));
-        println!("Player color: {}", self.players[player].identity);
-        println!("Player {}'s hand: ", player);
-        self.players[player].print_hand();
-        println!("{}", "-".repeat(20));
-        println!("Table state!");
-        self.table.print_decks();
-        println!("{}", "-".repeat(20));
-    }
-
     // Private functions
     // Game::new() helper functions
     fn generate_players(num_players: usize) -> Result<Vec<Player>, String> {
@@ -281,7 +269,7 @@ impl Game {
             print!("> ");
             stdout().flush();
 
-            let x = read_uint_from_user();
+            let x = read_usize_from_user();
             if x == 3 {
                 break Err(String::from("You have decided not to leap! Exiting..."));
             }
