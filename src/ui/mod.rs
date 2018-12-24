@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
 use ::game::{Game, read_uint_from_user};
-use game::card::Value;
+use game::card::{Value, Deck, Card};
 use game::player::Player;
 
 pub fn play(game: &mut Game, num_players: usize, mut input: impl Read, mut output: impl Write) {
@@ -69,12 +69,16 @@ pub fn play(game: &mut Game, num_players: usize, mut input: impl Read, mut outpu
                     can_play = false;
                 },
                 5 => {
-                    if let Err(message) = game.leap(player) {
+                    let mut cards = match pick_leap(&mut output, game, player){
+                        Ok(result)   => result,
+                        Err(message) => { write!(output, "{}\n", message); continue; },
+                    };
+                    if let Err(message) = game.leap(player, &mut cards) {
                         write!(output, "{}\n", message);
+                        continue;
                     }
-                    else {
-                        can_play = false;
-                    }
+                    write!(output, "Player leapt ahead and drew a card!\n");
+                    can_play = false;
                 },
                 6 => {
                     break;
@@ -120,6 +124,80 @@ fn pick_buy(output: &mut impl Write, game: &mut Game, player: usize) -> Result<(
     Ok((cards, deck_value))
 }
 
+fn pick_leap(output: &mut impl Write, game: &mut Game, player: usize) -> Result<Vec<usize>, String> {
+    let player = &mut game.players[player];
+    let mut commons: Vec<usize> = Vec::new();
+
+    for i in 0..player.hand.len() {
+        if player.hand[i].is_common() {
+            commons.push(i);
+        }
+    }
+
+    if commons.len() < 4 {
+        return Err(String::from("Not enough commons to leap!"));
+    }
+
+    let num_commons = select_num_commons_leap(output)?;
+    let deck_value = Game::translate_commons_for_leap(num_commons);
+
+
+    commons = select_commons_leap(output, player, commons, num_commons);
+    Ok(commons)
+}
+
+fn select_num_commons_leap(output: &mut impl Write) -> Result<usize, String> {
+    loop {
+        write!(output, "Enter how many commons you want to trade! (4: Tri, 5: Quad, 6: Quint, 7: Exit)\n");
+        write!(output, "> ");
+        output.flush();
+
+        let x = read_uint_from_user();
+        if x == 7 {
+            break Err(String::from("You have decided not to leap! Exiting..."));
+        }
+        if x > 3 && x < 7 {
+            break Ok(x);
+        }
+        write!(output, "That is an incorrect selection!\n");
+    }
+}
+
+fn select_commons_leap(output:&mut impl Write, player: &Player, commons: Vec<usize>, num_commons: usize) -> Vec<usize> {
+    let mut commons = commons.clone();
+    if num_commons == commons.len() {
+        return commons;
+    }
+    let mut translated_decks: Deck = Deck::default();
+    loop {
+        translated_decks.0 = player.indexes_to_cards(&commons);
+        write!(output, "Here are all the commons to select. The first {} cards on the left will be traded in.\n", num_commons);
+        write!(output, "Enter the number of the card to move it left.\n");
+        write!(output, "Enter {} to accept selection.\n", commons.len());
+        write!(output, "{}\n", translated_decks);
+        write!(output, "> ");
+        output.flush();
+
+        let card_num = read_uint_from_user();
+        if card_num == commons.len() {
+            write!(output, "Exiting card selection.\n");
+            break;
+        }
+        if card_num < commons.len() {
+            let index = match card_num {
+                0 => 0,
+                n => n-1,
+            };
+            commons.swap(card_num, index);
+        }
+        else {
+            write!(output, "Not a valid selection! Please try again.\n");
+        }
+    }
+    commons.split_off(num_commons);
+    commons
+}
+
 fn select_card_hand(output: &mut impl Write, player: &Player) -> Result<usize, String> {
     loop {
         write!(output, "{}\n", player.hand);
@@ -163,6 +241,7 @@ fn select_deck_value(output: &mut impl Write) -> Result<Option<Value>, String> {
         break Ok(value);
     }
 }
+
 
 fn extract_value(res: Result<String, String>) -> String {
     match res {
