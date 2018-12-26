@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use rand::{seq::SliceRandom, thread_rng};
-use std::fmt;
+use std::{str::FromStr, fmt};
 
 pub mod card;
 pub mod table;
@@ -8,11 +8,34 @@ pub mod player;
 
 use self::{
     table::Table,
-    card::{Card, Value},
+    card::{Card, Value, ValueOrMonad},
     player::Player,
 };
 
-use std::io::stdin;
+#[derive(Clone, Copy)]
+pub enum NumPlayers {
+    Two = 2,
+    Three = 3,
+    Four = 4,
+}
+
+impl FromStr for NumPlayers {
+    type Err = ();
+    fn from_str(source: &str) -> Result<Self, Self::Err> {
+        source
+            .trim()
+            .parse::<usize>()
+            .map_err(|_| ())
+            .and_then(|num|
+                match num {
+                    2 => Ok(NumPlayers::Two),
+                    3 => Ok(NumPlayers::Three),
+                    4 => Ok(NumPlayers::Four),
+                    _ => Err(()),
+                }
+            )
+    }
+}
 
 pub enum FlipError {
     EmptyDiscardPile,
@@ -29,13 +52,77 @@ impl fmt::Display for FlipError {
     }
 }
 
+pub enum LeapError {
+    NumOfCards(usize),
+    NotAllCommons,
+}
+
+impl fmt::Display for LeapError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use self::LeapError::*;
+        match self {
+            NumOfCards(length) => write!(fmt, "Incorrect number of cards: {}", length),
+            NotAllCommons => write!(fmt, "Not all cards are common"),
+        }
+    }
+}
+
+pub enum TradeOutcome {
+    Cards(usize),
+    Monad,
+}
+
+pub enum TradeError {
+    OutOfCards(Value),
+    SameTemperature,
+    NotSameValueOrIdentity,
+}
+
+impl fmt::Display for TradeError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use self::TradeError::*;
+        match self {
+            OutOfCards(_) => write!(fmt, "Can't buy something of the same value"),
+            SameTemperature => write!(fmt, "Cards should not be the same tempurature"),
+            NotSameValueOrIdentity => write!(fmt, "Cards must have the same value, or one must match your color"),
+        }
+    }
+}
+
+pub enum BuyError {
+    SameValue,
+    NotEnoughPoints,
+    OutOfCards(Value),
+}
+
+impl fmt::Display for BuyError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use self::BuyError::*;
+        match self {
+            SameValue => write!(fmt, "Can't buy something of the same value!"),
+            NotEnoughPoints => write!(fmt, "Not enough points!"),
+            OutOfCards(value) => write!(fmt, "The {} deck is out of cards!", value),
+        }
+    }
+}
+
 pub struct Game {
     pub players: Vec<Player>,
     pub table: Table,
 }
 
 impl Game {
-    // Public functions
+    pub fn new(num_players: NumPlayers) -> Self {
+        let mut table = Table::new(num_players);
+        let mut players = Game::generate_players(num_players);
+
+        for player in &mut players {
+            player.hand.extend(table.common.drain(0..6));
+        }
+
+        Game { players, table }
+    }
+
     pub fn flip(&mut self) -> Result<(), FlipError> {
         if self.table.discard.is_empty() { return Err(FlipError::EmptyDiscardPile); }
         if !self.table.deck(card::Value::Common).is_empty() { return Err(FlipError::NonEmptyCommonDeck); }
@@ -55,95 +142,38 @@ impl Game {
         }
     }
 
-    pub fn leap(&mut self, player: usize) -> Result<(), String> {
-        use self::card::Deck;
+    pub fn leap(&mut self, player: usize, cards: &mut Vec<usize>) -> Result<(), LeapError> {
         let player = &mut self.players[player];
-        let mut num_commons: usize;
 
-        let mut commons = player.hand.find_all(Card::is_common);
-
-        if commons.len() < 4 {
-            return Err(String::from("Not enough commons to leap!"));
+        if cards.len() < 4 || cards.len() > 6 {
+            return Err(LeapError::NumOfCards(cards.len()));
         }
 
-        loop {
-            num_commons = Game::select_commons_leap(&commons)?;
-            let deck_value = Game::translate_commons_for_leap(num_commons);
-            if ! self.table.deck(deck_value).is_empty() {
-                break;
-            }
-            println!("That deck is empty!");
-        }
-
-        if num_commons != commons.len() {
-            loop {
-                println!("Here are all the commons to select. The first {} cards on the left will be traded in.", num_commons);
-                println!("Enter the number of the card to move it left.");
-                println!("Enter {} to accept selection.", commons.len());
-
-                let mut translated_decks: Deck = Deck::default();
-                translated_decks.0 = player.indexes_to_cards(&commons);
-                println!("{}", translated_decks);
-
-
-                print!("\n> ");
-                stdout().flush();
-
-                let card_num = read_usize();
-                if card_num == commons.len() {
-                    println!("Exiting card selection.");
-                    break;
-                }
-                if card_num < commons.len() {
-                    let index = match card_num {
-                        0 => 0,
-                        n => n-1,
-                    };
-                    commons.swap(card_num, index);
-                }
-                else {
-                    println!("Not a valid selection! Please try again.");
-                }
-            }
-            commons.split_off(num_commons);
+        if ! cards.iter().all(|&card| player.hand[card].value.is_common()) {
+            return Err(LeapError::NotAllCommons);
         }
 
         let card = self.table.draw_top(
-            Game::translate_commons_for_leap(num_commons)
+            Game::translate_commons_for_leap(cards.len())
         ).unwrap();
 
-        commons.sort();
-        for elt in commons.iter().rev() {
+        cards.sort();
+        for elt in cards.iter().rev() {
             self.table.return_card(player.hand.remove(*elt));
         }
 
-        println!("Leapt forward with a {}", card);
         player.hand.push(card);
 
         Ok(())
     }
 
-    pub fn buy(&mut self, player: usize) -> Result<(), String>{
+    pub fn buy(
+        &mut self,
+        player: usize,
+        cards: &mut Vec<usize>,
+        deck_or_monad: ValueOrMonad
+    ) -> Result<bool, BuyError> {
         let player = &mut self.players[player];
-        let mut cards: Vec<usize> = Vec::new();
-        loop {
-            println!("Select a card you want to use to buy!");
-            print!("> ");
-            stdout().flush();
-
-            match player.select_card_in_hand() {
-                Ok(card)     => cards.push(card),
-                Err(message) => {
-                    if cards.is_empty() {
-                        return Err(String::from("No cards selected! Exiting buying mode."));
-                    }
-                    println!("{} Let's see if you can buy anything with this!", message);
-                    break;
-                },
-            };
-        }
-        cards.dedup();
-
         let nums = cards
             .iter()
             .map(|p| &player.hand[*p])
@@ -153,60 +183,65 @@ impl Game {
         let buy_value = nums.iter().sum::<usize>();
         let max_value = nums.into_iter().max().unwrap_or(0);
 
-        loop {
-            println!("Pick the deck you want to buy from!");
-            let choice = self.table.select_deck_value()?;
+        let cost = deck_or_monad.points();
 
-            let cost = choice
-                .map(Value::points)
-                .unwrap_or(80);
-
-            if max_value >= cost {
-                println!("Can't buy something of the same value!");
-                continue;
-            }
-            if buy_value < cost {
-                println!("Not enough points!");
-                continue;
-            }
-
-            if let Some(value) = choice {
-                let drawn_card = player.draw_card(value, &mut self.table).unwrap();
-                println!("Player bought a  {}", drawn_card);
-            } else {
-                player.draw_monad(&mut self.table);
-                println!("Player bought a monad!");
-            }
-
-            cards.sort();
-            for i in cards.iter().rev() {
-                self.table.return_card(player.hand.remove(*i));
-            }
-
-            break Ok(());
+        if max_value >= cost {
+            return Err(BuyError::SameValue);
         }
+        if buy_value < cost {
+            return Err(BuyError::NotEnoughPoints);
+        }
+
+        let drew_card;
+        match deck_or_monad {
+            ValueOrMonad::Value(value) => {
+                if player.draw_card(value, &mut self.table).is_none() {
+                    return Err(BuyError::OutOfCards(value));
+                }
+                drew_card = true;
+            },
+            ValueOrMonad::Monad => {
+                player.draw_monad(&mut self.table);
+                drew_card = false;
+            },
+        }
+
+        cards.sort();
+        for i in cards.iter().rev() {
+            self.table.return_card(player.hand.remove(*i));
+        }
+
+        Ok(drew_card)
     }
 
-    pub fn trade(&mut self, player: usize, card1: usize, card2: usize, value: Value, bonus: bool) -> Result<String, String> {
-        let mut return_message: String = String::new();
-        let player = &mut self.players[player];
+    pub fn trade(
+        &mut self,
+        player: usize,
+        card1: usize,
+        card2: usize,
+        bonus: bool,
+    ) -> Result<(usize, bool), TradeError> {
+        let mut num_cards = 0;
+        let mut drew_monad = false;
 
-        if let Some(v) = value.succ() {
-            if player.draw_card(v, &mut self.table).is_none() {
-                return Err(format!("You can't draw any more {} cards! Please choose different cards!", v));
+        let player = &mut self.players[player];
+        let value = player.trade_value(card1, card2)?;
+
+        if value.succ().is_some() {
+            if player.draw_card(value, &mut self.table).is_none() {
+                return Err(TradeError::OutOfCards(value));
             }
-            return_message += &format!("Player drew a {}!\n", value.succ().unwrap());
+            num_cards += 1;
         } else {
-            player.draw_monad(&mut self.table)
-                .expect("Woah! We ran out of Monads! This isn't supposed to happen!");
-            return_message += &String::from("Player drew a monad!\n");
+            player.draw_monad(&mut self.table).unwrap();
+            drew_monad = true;
         }
 
         if bonus {
             let mut maybe_curr_value = value.prev();
             while let Some(curr_value) = maybe_curr_value {
-                if let Some(card) = player.draw_card(curr_value, &mut self.table) {
-                    return_message += &format!("Player drew a bonus {} card!\n", card);
+                if player.draw_card(curr_value, &mut self.table).is_some() {
+                    num_cards += 1;
                 }
                 maybe_curr_value = curr_value.prev();
             }
@@ -215,76 +250,42 @@ impl Game {
 
         let mut selected_cards = [card1, card2];
         selected_cards.sort();
-        for card in selected_cards.iter().rev() {
-            self.table.return_card(player.hand.remove(*card));
+
+        for &card in selected_cards.iter().rev() {
+            self.table.return_card(player.hand.remove(card));
         }
 
-        Ok(return_message)
+        Ok((num_cards, drew_monad))
     }
 
     pub fn init_turn(&mut self, player: usize) {
         self.players[player].took_bonus = false;
     }
 
-    pub fn new(num_players: usize) -> Result<Self, String> {
-        let mut table = Table::new(num_players);
-        let mut players = Game::generate_players(num_players)?;
-
-        for player in &mut players {
-            player.hand.extend(table.common.drain(0..6));
-        }
-
-        Ok(Game { players, table })
-    }
-
-    // Private functions
-    // Game::new() helper functions
-    fn generate_players(num_players: usize) -> Result<Vec<Player>, String> {
+    fn generate_players(num_players: NumPlayers) -> Vec<Player> {
         let mut colors = card::COLORS.to_vec();
 
         match num_players {
-            2 => {
+            NumPlayers::Two => {
                 colors.shuffle(&mut thread_rng());
                 colors.drain(0..4);
             },
-            3 => {
+            NumPlayers::Three => {
                 colors.drain(0..3);
             },
-            4 => {
+            NumPlayers::Four => {
                 colors.remove(5);
                 colors.remove(2);
             },
-            _ => return Err(String::from("There should only be 2-4 players!")),
         }
 
         colors.shuffle(&mut thread_rng());
 
-        Ok(colors.into_iter().map(Player::from).collect())
-    }
-
-    // Game::leap() helper functions
-    fn select_commons_leap(commons: & Vec<usize>) -> Result<usize, String> {
-        loop {
-            println!("Enter how many commons you want to trade! (3 -> Quit; 4 -> Tri; 5 -> Quad; 6 -> Quint)");
-            print!("> ");
-            stdout().flush();
-
-            let x = read_usize_from_user();
-            if x == 3 {
-                break Err(String::from("You have decided not to leap! Exiting..."));
-            }
-            if x > 3 && x <= commons.len() {
-                break Ok(x);
-            }
-            if x > commons.len() && x < 7 {
-                println!("You don't have enough cards to trade in for that!!");
-            }
-            println!("That is an incorrect selection!");
-        }
+        colors.into_iter().map(Player::from).collect()
     }
 
     // Using option for this makes it ugly and checks ensure that values range from 4-6
-    fn translate_commons_for_leap(value: usize) -> self::card::Value {
+    pub fn translate_commons_for_leap(value: usize) -> self::card::Value {
         use self::card::Value::*;
         match value {
             4 => Tri,

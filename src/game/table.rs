@@ -1,8 +1,10 @@
-use super::card::{self, Monad, Card, Deck};
+use crate::game::{
+    NumPlayers,
+    card::{self, Monad, Card, Deck},
+};
 use std::{
     fmt,
     iter::repeat_with,
-    io::{stdout, Write},
 };
 
 pub struct Table {
@@ -16,10 +18,10 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(players: usize) -> Self {
+    pub fn new(players: NumPlayers) -> Self {
         let mut table = Table {
-            discard: Deck::multiple(players),
-            common:  Deck::multiple(players),
+            discard: Deck::multiple(players as usize),
+            common:  Deck::multiple(players as usize),
             bi:      Deck::multiple(1),
             tri:     Deck::multiple(1),
             quad:    Deck::multiple(1),
@@ -31,7 +33,7 @@ impl Table {
             use self::card::Value::*;
 
             table.common.extend(
-                repeat_with(|| Card { value: Common, color }).take(players)
+                repeat_with(|| Card { value: Common, color }).take(players as usize)
             );
             table.bi   .push(Card { value: Bi   , color });
             table.tri  .push(Card { value: Tri  , color });
@@ -42,32 +44,6 @@ impl Table {
         table.shuffle_decks();
 
         table
-    }
-
-    pub fn select_deck_value(&self) -> Result<Option<self::card::Value>, String> {
-        use self::card::Value;
-        loop {
-            println!("1-5: Cards, 6: Monad, 0: Exit");
-            print!("> ");
-            stdout().flush();
-
-            let value = match read_usize_from_user() {
-                0 => break Err(String::from("Exiting deck selection.")),
-                n @ 1..=5 => Value::try_from(n).unwrap(),
-                6 => break Ok(None),
-                n => {
-                    println!("{} is an invalid selection! Please try again.", n);
-                    continue;
-                }
-            };
-
-            if self.deck(value).is_empty() {
-                println!("That deck is out of cards! Please select a new deck.");
-                continue;
-            }
-
-            break Ok(Some(value));
-        }
     }
 
     pub fn deck_mut(&mut self, value: card::Value) -> &mut Deck {
@@ -81,7 +57,7 @@ impl Table {
         }
     }
 
-    pub fn deck(&self, value: card::Value) -> &Deck{
+    pub fn deck(&self, value: card::Value) -> &Deck {
         use self::card::Value::*;
         match value {
             Common => &self.common,

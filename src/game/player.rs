@@ -1,8 +1,8 @@
 use super::{
     card::{self, Monad, Deck, Card, Color, Value},
     table::Table,
+    TradeError,
 };
-use std::io::{stdout, Write};
 
 pub struct Player {
     pub hand: Deck,
@@ -23,12 +23,12 @@ impl From<card::Color> for Player {
 }
 
 impl Player {
-    pub fn trade_value(&self, card1: usize, card2: usize) -> Result<Value, String> {
+    pub fn trade_value(&self, card1: usize, card2: usize) -> Result<Value, TradeError> {
         let card1 = &self.hand[card1];
         let card2 = &self.hand[card2];
 
         if card1.temp() == card2.temp() {
-            return Err(String::from("Cards should not be the same tempurature!"));
+            return Err(TradeError::SameTemperature);
         }
 
         if card1.value == card2.value {
@@ -43,7 +43,7 @@ impl Player {
             return Ok(card1.value);
         }
 
-        Err(String::from("Cards should have the same value when trading! Or if they don't, one should at least be your identity color!"))
+        Err(TradeError::NotSameValueOrIdentity)
     }
 
     pub fn can_take_bonus(&self, card1: usize, card2: usize) -> bool {
@@ -60,23 +60,6 @@ impl Player {
         // Not only do the colors need to match a bonus pair, but you can't use a wild to get a
         // bonus.
         bonus_match && self.hand[card1].value == self.hand[card2].value && ! self.took_bonus
-    }
-
-    pub fn select_card_in_hand(&self) -> Result<usize, String> {
-        loop {
-            self.print_hand();
-            print!("> ");
-            stdout().flush();
-
-            let n = read_usize_from_user();
-            if n == self.hand.len() {
-                break Err(String::from("Exiting hand selection."));
-            }
-            if n < self.hand.len() {
-                break Ok(n);
-            }
-            println!("{} is an invalid selection! Please try again.", n);
-        }
     }
 
     pub fn draw_card(&mut self, value: Value, table: &mut Table) -> Option<&Card> {
