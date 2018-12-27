@@ -21,5 +21,5 @@ fn main() {
 
     let (stdin, stdout) = (stdin(), stdout());
     let ui = Ui { input: stdin.lock(), output: stdout.lock() };
-    ui.play(Game::new(num_players));
+    ui.play(Game::new(num_players)).unwrap();
 }

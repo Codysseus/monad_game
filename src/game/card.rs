@@ -167,7 +167,7 @@ impl Card {
 }
 
 #[derive(Default)]
-pub struct Deck(pub Vec<Card>);
+pub struct Deck(Vec<Card>);
 
 impl fmt::Display for Deck {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -192,6 +192,12 @@ impl Deck {
         (0..self.len())
             .filter(|&i| predicate(&self[i]))
             .collect()
+    }
+}
+
+impl From<Vec<Card>> for Deck {
+    fn from(vec: Vec<Card>) -> Deck {
+        Deck(vec)
     }
 }
 

@@ -258,8 +258,8 @@ impl Game {
         Ok((num_cards, drew_monad))
     }
 
-    pub fn init_turn(&mut self, player: usize) {
-        self.players[player].took_bonus = false;
+    pub fn player_took_bonus(&mut self, player: usize) -> &mut bool {
+        &mut self.players[player].took_bonus
     }
 
     fn generate_players(num_players: NumPlayers) -> Vec<Player> {

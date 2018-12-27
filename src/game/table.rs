@@ -93,13 +93,12 @@ impl fmt::Display for Table {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(
             fmt,
-"Common:  {}
-Discard: {}
-Bi:      {}
-Tri:     {}
-Quad:    {}
-Quint:   {}
-",
+            "Common:  {}\n\
+            Discard: {}\n\
+            Bi:      {}\n\
+            Tri:     {}\n\
+            Quad:    {}\n\
+            Quint:   {}\n",
             self.common.len(),
             self.discard,
             self.bi,

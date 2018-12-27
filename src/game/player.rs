@@ -57,8 +57,7 @@ impl Player {
             (Green,  Yellow) => true,
             _                => false,
         };
-        // Not only do the colors need to match a bonus pair, but you can't use a wild to get a
-        // bonus.
+        // Not only do the colors need to match a bonus pair, but you can't use a wild to get a bonus.
         bonus_match && self.hand[card1].value == self.hand[card2].value && ! self.took_bonus
     }
 
