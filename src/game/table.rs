@@ -1,7 +1,11 @@
-use super::read_uint_from_user;
-use super::card::{self, Monad, Card, Deck};
-use std::iter::repeat_with;
-use std::io::{stdout, Write};
+use crate::game::{
+    NumPlayers,
+    card::{self, Monad, Card, Deck},
+};
+use std::{
+    fmt,
+    iter::repeat_with,
+};
 
 pub struct Table {
     pub discard: Deck,
@@ -14,10 +18,10 @@ pub struct Table {
 }
 
 impl Table {
-    pub fn new(players: usize) -> Self {
+    pub fn new(players: NumPlayers) -> Self {
         let mut table = Table {
-            discard: Deck::multiple(players),
-            common:  Deck::multiple(players),
+            discard: Deck::multiple(players as usize),
+            common:  Deck::multiple(players as usize),
             bi:      Deck::multiple(1),
             tri:     Deck::multiple(1),
             quad:    Deck::multiple(1),
@@ -29,7 +33,7 @@ impl Table {
             use self::card::Value::*;
 
             table.common.extend(
-                repeat_with(|| Card { value: Common, color }).take(players)
+                repeat_with(|| Card { value: Common, color }).take(players as usize)
             );
             table.bi   .push(Card { value: Bi   , color });
             table.tri  .push(Card { value: Tri  , color });
@@ -40,15 +44,6 @@ impl Table {
         table.shuffle_decks();
 
         table
-    }
-
-    pub fn print_decks(&self) {
-        println!("Common:\t{}",  self.common.len());
-        println!("Discard:\t{}", self.discard.to_string());
-        println!("Bi:\t{}",      self.bi.to_string());
-        println!("Tri:\t{}",     self.tri.to_string());
-        println!("Quad:\t{}",    self.quad.to_string());
-        println!("Quint:\t{}",   self.quint.to_string());
     }
 
     pub fn deck_mut(&mut self, value: card::Value) -> &mut Deck {
@@ -94,3 +89,22 @@ impl Table {
     }
 }
 
+impl fmt::Display for Table {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            fmt,
+            "Common:  {}\n\
+            Discard: {}\n\
+            Bi:      {}\n\
+            Tri:     {}\n\
+            Quad:    {}\n\
+            Quint:   {}\n",
+            self.common.len(),
+            self.discard,
+            self.bi,
+            self.tri,
+            self.quad,
+            self.quint,
+        )
+    }
+}

@@ -2,10 +2,18 @@ use rand::{seq::SliceRandom, thread_rng};
 use std::{
     fmt,
     ops::{Deref, DerefMut},
+    str::FromStr,
 };
 
 #[must_use]
 pub struct Monad;
+
+impl FromStr for Monad {
+    type Err = ();
+    fn from_str(source: &str) -> Result<Self, Self::Err> {
+        if source == "Monad" { Ok(Monad) } else { Err(()) }
+    }
+}
 
 #[derive(PartialEq)]
 pub enum Temp {
@@ -40,12 +48,49 @@ pub enum Value {
 
 impl fmt::Display for Value {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?}", self)
+        use self::Value::*;
+        write!(fmt, "{}", match self {
+            Common => "①",
+            Bi => "②",
+            Tri => "③",
+            Quad => "④",
+            Quint => "⑤",
+        })
+    }
+}
+
+impl FromStr for Value {
+    type Err = ();
+    fn from_str(source: &str) -> Result<Self, Self::Err> {
+        use self::Value::*;
+        let value = match source {
+            "Common" => Common,
+            "Bi"     => Bi,
+            "Tri"    => Tri,
+            "Quad"   => Quad,
+            "Quint"  => Quint,
+            _ => return Err(()),
+        };
+
+        Ok(value)
     }
 }
 
 impl Value {
-    pub fn succ(&self) -> Option<Value> {
+    pub fn try_from(source: usize) -> Result<Self, ()> {
+        use self::Value::*;
+        let value = match source {
+            1 => Common,
+            2 => Bi,
+            3 => Tri,
+            4 => Quad,
+            5 => Quint,
+            _ => return Err(()),
+        };
+
+        Ok(value)
+    }
+    pub fn succ(self) -> Option<Value> {
         use self::Value::*;
         match self {
             Common => Some(Bi),
@@ -65,7 +110,7 @@ impl Value {
             Quint  => Some(Quad),
         }
     }
-    pub fn num(&self) -> usize {
+    pub fn points(self) -> usize {
         use self::Value::*;
         match self {
             Common => 1,
@@ -75,6 +120,20 @@ impl Value {
             Quint  => 36,
         }
     }
+    pub fn is_common(self) -> bool {
+        self == Value::Common
+    }
+}
+
+pub enum ValueOrMonad { Value(Value), Monad }
+
+impl ValueOrMonad {
+    pub fn points(&self) -> usize {
+        match self {
+            ValueOrMonad::Value(value) => value.points(),
+            ValueOrMonad::Monad => 80,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -82,9 +141,10 @@ pub struct Card {
     pub value: Value,
     pub color: Color,
 }
+
 impl fmt::Display for Card {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{}:{}", self.color, self.value)
+        write!(fmt, "[{} {}]", self.value, self.color)
     }
 }
 
@@ -98,16 +158,16 @@ impl Card {
     }
 
     pub fn num(&self) -> usize {
-        self.value.num()
+        self.value.points()
     }
 
     pub fn is_common(&self) -> bool {
-        self.value == Value::Common
+        self.value.is_common()
     }
 }
 
 #[derive(Default)]
-pub struct Deck(pub Vec<Card>);
+pub struct Deck(Vec<Card>);
 
 impl fmt::Display for Deck {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -115,9 +175,7 @@ impl fmt::Display for Deck {
             .iter()
             .enumerate()
             .map(|(i, card)| write!(fmt, "{}: {} ", i, card))
-            .collect::<fmt::Result>()
-            .unwrap();
-        Ok(())
+            .collect()
     }
 }
 
@@ -129,12 +187,17 @@ impl Deck {
     pub fn shuffle(&mut self) {
         self.0.shuffle(&mut thread_rng());
     }
-    pub fn to_string(&self) -> String {
-        let mut string = String::new();
-        for card in self.iter() {
-            string += &format!("{}\t", card);
-        }
-        string
+
+    pub fn find_all(&self, predicate: impl Fn(&Card) -> bool) -> Vec<usize> {
+        (0..self.len())
+            .filter(|&i| predicate(&self[i]))
+            .collect()
+    }
+}
+
+impl From<Vec<Card>> for Deck {
+    fn from(vec: Vec<Card>) -> Deck {
+        Deck(vec)
     }
 }
 
