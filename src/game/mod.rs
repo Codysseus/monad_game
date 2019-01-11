@@ -227,9 +227,9 @@ impl Game {
         let player = &mut self.players[player];
         let value = player.trade_value(card1, card2)?;
 
-        if value.succ().is_some() {
-            if player.draw_card(value, &mut self.table).is_none() {
-                return Err(TradeError::OutOfCards(value));
+        if let Some(succ_value) = value.succ() {
+            if player.draw_card(succ_value, &mut self.table).is_none() {
+                return Err(TradeError::OutOfCards(succ_value));
             }
             num_cards += 1;
         } else {

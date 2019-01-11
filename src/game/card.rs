@@ -50,11 +50,11 @@ impl fmt::Display for Value {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         use self::Value::*;
         write!(fmt, "{}", match self {
-            Common => "①",
-            Bi => "②",
-            Tri => "③",
-            Quad => "④",
-            Quint => "⑤",
+            Common => "① (1)",
+            Bi => "② (3)",
+            Tri => "③ (7)",
+            Quad => "④ (16)",
+            Quint => "⑤ (36)",
         })
     }
 }

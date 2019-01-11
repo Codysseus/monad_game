@@ -4,7 +4,6 @@ use std::{
 };
 use crate::game::{
     Game,
-    player::Player,
     card::{Deck, Value, Monad, ValueOrMonad},
 };
 
@@ -37,6 +36,7 @@ impl<Input: BufRead, Output: Write> Ui<Input, Output> {
                             continue;
                         }
                         self.draw(&mut game, player)?;
+                        break;
                     },
                     "flip" => {
                         if action_performed {
@@ -44,6 +44,7 @@ impl<Input: BufRead, Output: Write> Ui<Input, Output> {
                             continue;
                         }
                         self.flip(&mut game)?;
+                        break;
                     },
                     "trade" => action_performed |= self.trade(&mut game, player)?.is_ok(),
                     "buy" => action_performed |= self.buy(&mut game, player)?.is_ok(),
