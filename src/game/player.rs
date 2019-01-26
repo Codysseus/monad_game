@@ -35,11 +35,11 @@ impl Player {
             return Ok(card1.value);
         }
 
-        if self.matches_color(card1) {
+        if self.is_player_wild(card1) {
             return Ok(card2.value);
         }
 
-        if self.matches_color(card2) {
+        if self.is_player_wild(card2) {
             return Ok(card1.value);
         }
 
@@ -78,7 +78,7 @@ impl Player {
         table.monad.pop().map(|monad| self.monads.push(monad))
     }
 
-    fn matches_color(&self, card: &Card) -> bool {
-        self.identity == card.color
+    fn is_player_wild(&self, card: &Card) -> bool {
+        self.identity == card.color && ! card.is_common()
     }
 }
