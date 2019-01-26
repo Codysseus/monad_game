@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+extern crate itertools;
+use itertools::Itertools;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{str::FromStr, fmt};
 
@@ -256,6 +258,35 @@ impl Game {
         }
 
         Ok((num_cards, drew_monad))
+    }
+
+    pub fn check_player_end(self, player: usize) -> bool {
+        let player = &self.players[player];
+        if ! (self.table.common.is_empty() || self.table.discard.is_empty() )  {
+            return false;
+        }
+        let trade_values: Vec<Value> =
+            (0..player.hand.len())
+                .combinations(2)
+                .filter_map(|pair| player.trade_value(pair[0], pair[1]).ok())
+                .collect();
+
+        if let Some(max_value) = trade_values.iter().max() {
+            if let Some(value) = max_value.succ() {
+                if ! self.table.deck(value).is_empty() {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+
+        
+
+//        let max_value = player.hand.iter().map(|card| card.value).max().succ();
+//        let buy_value = player.hand.iter().fold(0, |acc, card| acc + card.value.points());
+        true
     }
 
     pub fn player_took_bonus(&mut self, player: usize) -> &mut bool {
