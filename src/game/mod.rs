@@ -260,7 +260,7 @@ impl Game {
         Ok((num_cards, drew_monad))
     }
 
-    pub fn check_player_end(self, player: usize) -> bool {
+    pub fn check_player_end(&self, player: usize) -> bool {
         let player = &self.players[player];
         if ! (self.table.common.is_empty() || self.table.discard.is_empty() )  {
             return false;

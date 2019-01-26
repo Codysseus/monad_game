@@ -49,7 +49,12 @@ impl<Input: BufRead, Output: Write> Ui<Input, Output> {
                     "trade" => action_performed |= self.trade(&mut game, player)?.is_ok(),
                     "buy" => action_performed |= self.buy(&mut game, player)?.is_ok(),
                     "leap" => action_performed |= self.leap(&mut game, player)?.is_ok(),
-                    "end" => break,
+                    "end" => {
+                        if action_performed || game.check_player_end(player) {
+                            break;
+                        }
+                        writeln!(self.output, "You can't end your turn yet! You can still take an action.")?;
+                    },
                     command => writeln!(self.output, "Command not recognized: {}", command)?,
                 }
             }
