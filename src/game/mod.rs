@@ -261,10 +261,14 @@ impl Game {
     }
 
     pub fn check_player_end(&self, player: usize) -> bool {
+        use self::card::Value::*;
         let player = &self.players[player];
         if ! (self.table.common.is_empty() || self.table.discard.is_empty() )  {
             return false;
         }
+
+        //-------------------------------------------------------------------
+
         let trade_values: Vec<Value> =
             (0..player.hand.len())
                 .combinations(2)
@@ -281,11 +285,51 @@ impl Game {
                 return false;
             }
         }
+        drop(trade_values);
 
-        
+        //-------------------------------------------------------------------
 
-//        let max_value = player.hand.iter().map(|card| card.value).max().succ();
-//        let buy_value = player.hand.iter().fold(0, |acc, card| acc + card.value.points());
+        let mut sorted_hand = player.hand.clone();
+        let mut sum = 0;
+        let mut highest_value = Common;
+        let mut num_commons = 0;
+
+        sorted_hand.sort_by(|a, b| a.value.cmp(&b.value));
+        for card in sorted_hand.iter() {
+            if card.is_common() {
+                num_commons += 1;
+            }
+
+            sum += card.num();
+            if card.value > highest_value {
+                highest_value = card.value;
+            }
+            if let Some(value) = highest_value.succ() {
+                if sum >= value.points() {
+                    return false;
+                }
+            }
+        }
+        drop(sorted_hand);
+
+        //-------------------------------------------------------------------
+
+        if num_commons > 5 {
+            if self.table.deck(Quint).len() > 0 {
+                return false;
+            }
+        }
+        if num_commons > 4 {
+            if self.table.deck(Quad).len() > 0 {
+                return false;
+            }
+        }
+        if num_commons > 3 {
+            if self.table.deck(Tri).len() > 0 {
+                return false;
+            }
+        }
+
         true
     }
 
