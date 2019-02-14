@@ -294,8 +294,8 @@ impl Game {
         let mut highest_value = Common;
         let mut num_commons = 0;
 
-        sorted_hand.sort_by(|a, b| a.value.cmp(&b.value));
-        for card in sorted_hand.iter() {
+        sorted_hand.sort_by_key(|card| card.value);
+        for card in &sorted_hand {
             if card.is_common() {
                 num_commons += 1;
             }
@@ -314,20 +314,14 @@ impl Game {
 
         //-------------------------------------------------------------------
 
-        if num_commons > 5 {
-            if self.table.deck(Quint).len() > 0 {
-                return false;
-            }
+        if num_commons > 5 && ! self.table.deck(Quint).is_empty() {
+            return false;
         }
-        if num_commons > 4 {
-            if self.table.deck(Quad).len() > 0 {
-                return false;
-            }
+        if num_commons > 4 && ! self.table.deck(Quad).is_empty() {
+            return false;
         }
-        if num_commons > 3 {
-            if self.table.deck(Tri).len() > 0 {
-                return false;
-            }
+        if num_commons > 3 && ! self.table.deck(Tri).is_empty() {
+            return false;
         }
 
         true
