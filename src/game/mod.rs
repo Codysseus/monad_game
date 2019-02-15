@@ -269,20 +269,23 @@ impl Game {
 
         //-------------------------------------------------------------------
 
-        let trade_values: Vec<Value> =
+        let mut trade_values: Vec<Option<Value>> =
             (0..player.hand.len())
                 .combinations(2)
                 .filter_map(|pair| player.trade_value(pair[0], pair[1]).ok())
+                .map(|value| value.succ())
                 .collect();
 
-        if let Some(max_value) = trade_values.iter().max() {
-            if let Some(value) = max_value.succ() {
-                if ! self.table.deck(value).is_empty() {
-                    return false;
-                }
-            }
-            else {
-                return false;
+        trade_values.dedup();
+
+        for value in &trade_values {
+            match value {
+                Some(v) => {
+                    if ! self.table.deck(*v).is_empty() {
+                        return false;
+                    }
+                },
+                None => return false
             }
         }
         drop(trade_values);
