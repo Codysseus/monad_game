@@ -307,10 +307,15 @@ impl Game {
             if card.value > highest_value {
                 highest_value = card.value;
             }
-            if let Some(value) = highest_value.succ() {
-                if sum >= value.points() {
+
+            while let Some(value) = highest_value.succ() {
+                if sum >= value.points() && ! self.table.deck(value).is_empty() {
                     return false;
                 }
+                highest_value = highest_value.succ().unwrap();
+            }
+            if sum >= 80 && highest_value.succ().is_none() {
+                return false;
             }
         }
         drop(sorted_hand);
