@@ -278,16 +278,13 @@ impl Game {
 
         trade_values.dedup();
 
-        for value in &trade_values {
-            match value {
-                Some(v) => {
-                    if ! self.table.deck(*v).is_empty() {
-                        return false;
-                    }
-                },
-                None => return false
-            }
+        if trade_values.iter().any(|&value|
+            value.is_none() ||
+            ! self.table.deck(value.unwrap()).is_empty()
+        ) {
+            return false;
         }
+
         drop(trade_values);
 
         //-------------------------------------------------------------------
