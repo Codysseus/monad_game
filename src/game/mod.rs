@@ -305,13 +305,15 @@ impl Game {
                 highest_value = card.value;
             }
 
-            while let Some(value) = highest_value.succ() {
+            let mut value_iter = highest_value;
+
+            while let Some(value) = value_iter.succ() {
                 if sum >= value.points() && ! self.table.deck(value).is_empty() {
                     return false;
                 }
-                highest_value = highest_value.succ().unwrap();
+                value_iter = value_iter.succ().unwrap();
             }
-            if sum >= 80 && highest_value.succ().is_none() {
+            if sum >= 80 && value_iter.succ().is_none() {
                 return false;
             }
         }
