@@ -311,9 +311,9 @@ impl Game {
                 if sum >= value.points() && ! self.table.deck(value).is_empty() {
                     return false;
                 }
-                value_iter = value_iter.succ().unwrap();
+                value_iter = value;
             }
-            if sum >= 80 && value_iter.succ().is_none() {
+            if sum >= 80 {
                 return false;
             }
         }
