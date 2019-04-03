@@ -37,7 +37,7 @@ impl fmt::Display for Color {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum Value {
     Common,
     Bi,

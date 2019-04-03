@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+extern crate itertools;
+use itertools::Itertools;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{str::FromStr, fmt};
 
@@ -256,6 +258,80 @@ impl Game {
         }
 
         Ok((num_cards, drew_monad))
+    }
+
+    pub fn check_player_end(&self, player: usize) -> bool {
+        use self::card::Value::*;
+        let player = &self.players[player];
+        if ! (self.table.common.is_empty() || self.table.discard.is_empty() )  {
+            return false;
+        }
+
+        //-------------------------------------------------------------------
+
+        let mut trade_values: Vec<Option<Value>> =
+            (0..player.hand.len())
+                .combinations(2)
+                .filter_map(|pair| player.trade_value(pair[0], pair[1]).ok())
+                .map(|value| value.succ())
+                .collect();
+
+        trade_values.dedup();
+
+        if trade_values.iter().any(|&value|
+            value.is_none() ||
+            ! self.table.deck(value.unwrap()).is_empty()
+        ) {
+            return false;
+        }
+
+        drop(trade_values);
+
+        //-------------------------------------------------------------------
+
+        let mut sorted_hand = player.hand.clone();
+        let mut sum = 0;
+        let mut highest_value = Common;
+        let mut num_commons = 0;
+
+        sorted_hand.sort_by_key(|card| card.value);
+        for card in &sorted_hand {
+            if card.is_common() {
+                num_commons += 1;
+            }
+
+            sum += card.num();
+            if card.value > highest_value {
+                highest_value = card.value;
+            }
+
+            let mut value_iter = highest_value;
+
+            while let Some(value) = value_iter.succ() {
+                if sum >= value.points() && ! self.table.deck(value).is_empty() {
+                    return false;
+                }
+                value_iter = value;
+            }
+            if sum >= 80 {
+                return false;
+            }
+        }
+        drop(sorted_hand);
+
+        //-------------------------------------------------------------------
+
+        if num_commons > 5 && ! self.table.deck(Quint).is_empty() {
+            return false;
+        }
+        if num_commons > 4 && ! self.table.deck(Quad).is_empty() {
+            return false;
+        }
+        if num_commons > 3 && ! self.table.deck(Tri).is_empty() {
+            return false;
+        }
+
+        true
     }
 
     pub fn player_took_bonus(&mut self, player: usize) -> &mut bool {
